@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze Game</title>
+    <style>
+        body {
+            text-align: center;
+        }
+        canvas {
+            border: 2px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Maze Game</h1>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        <!--  #TODO: replace the hard-coded maze with the one of the algorithm made by Ashley -->
+        
+        const tileSize = 40;
+        const maze = [
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+            [1, 0, 1, 0, 1, 0, 1, 1, 0, 1],
+            [1, 0, 1, 0, 0, 0, 0, 1, 0, 1],
+            [1, 0, 1, 1, 1, 1, 0, 1, 0, 1],
+            [1, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+            [1, 1, 1, 1, 0, 1, 1, 1, 0, 1],
+            [1, 0, 0, 1, 0, 0, 0, 1, 0, 1],
+            [1, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ];
+
+        let player = { x: 1, y: 1 };
+
+        function drawMaze() {
+            for (let row = 0; row < maze.length; row++) {
+                for (let col = 0; col < maze[row].length; col++) {
+                    ctx.fillStyle = maze[row][col] === 1 ? "black" : "white";
+                    ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
+                }
+            }
+            ctx.fillStyle = "red";
+            ctx.fillRect(player.x * tileSize, player.y * tileSize, tileSize, tileSize);
+        }
+
+        function movePlayer(dx, dy) {
+            let newX = player.x + dx;
+            let newY = player.y + dy;
+            if (maze[newY][newX] === 0) {
+                player.x = newX;
+                player.y = newY;
+                drawMaze();
+            }
+        }
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "ArrowUp") movePlayer(0, -1);
+            if (event.key === "ArrowDown") movePlayer(0, 1);
+            if (event.key === "ArrowLeft") movePlayer(-1, 0);
+            if (event.key === "ArrowRight") movePlayer(1, 0);
+        });
+
+        drawMaze();
+    </script>
+</body>
+</html>
