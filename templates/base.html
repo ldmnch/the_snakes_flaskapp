@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %} Maze Game{% endblock %}</title>
+        <style>
+            .container {
+                max-width: 800px; 
+                margin: 0 auto; 
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            .menu {
+                list-style: none;
+                padding: 10px;
+                display: flex;
+                justify-content: center;
+            }
+            h1 {
+                font-size: 32px;
+                font-weight: bold;
+                font-style: normal;
+                color: black;
+                font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+            }
+            h2 {
+                font-size: 16px;
+                font-weight: normal;
+                font-style: normal;
+                color: darkolivegreen;
+                font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+            }
+            img {
+                width: 350px;
+                height: 350 px;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <div class="container">
+                {% block landing_content %}
+                <h1>Maze Game</h1>
+                <h2>landing page [internal]</h2>
+                <img src="{{ url_for('static', filename='snake_home.png') }}" alt="Snake">
+                <nav>
+                    <ul class="menu">
+                        <li><a href="{{ url_for('maze') }}"><button>Start Maze</button></a></li>
+                    </ul>
+                </nav>
+                {% endblock %}
+            </div>
+        </header>
+
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+    </body>
+</html>

@@ -1,9 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maze Game</title>
+{% extends "base.html" %}
+{% block landing_content %}
+<!-- Empty block to remove image & buttons -->
+{% endblock %}
+
+{% block extra_styles %}
     <style>
         body {
             text-align: center;
@@ -13,10 +13,14 @@
             background-color: white;
         }
     </style>
-</head>
-<body>
+{% endblock %}
+{% block content %}
+
+<div class="container">
     <h1>Maze Game</h1>
+    <h2>[demo version 1]</h2>
     <canvas id="gameCanvas" width="400" height="400"></canvas>
+</div>
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
@@ -69,5 +73,10 @@
 
         drawMaze();
     </script>
-</body>
-</html>
+    <nav>
+        <ul class="menu">
+            <li><a href="{{ url_for('maze') }}"><button>Solve Maze</button></a></li>
+            <!--  #TODO: Need to reroute Solve button to a different page by Franco -->
+        </ul>
+    </nav>
+{% endblock %}
