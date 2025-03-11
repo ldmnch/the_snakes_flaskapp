@@ -213,3 +213,134 @@ if __name__ == "__main__":
 
 # code to generate a sample path
 #print(generate_maze())
+
+
+import pygame
+from collections import deque
+
+# Maze layout (1 = wall, 0 = open path)
+maze = [ 
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+    [1, 0, 1, 0, 1, 0, 1, 1, 0, 1],
+    [0, 0, 1, 0, 0, 0, 0, 1, 0, 1],
+    [1, 0, 1, 1, 1, 1, 0, 1, 0, 1],
+    [1, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+    [1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+    [1, 0, 1, 1, 1, 1, 1, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+]
+
+def solve_maze(maze):
+    """
+    Solves the maze using BFS and returns the shortest path as a list of coordinates.
+    """
+    start = (1, 1)  # Player start position
+    goal = (8, 8)   # Goal position
+
+    queue = deque([(start, [start])])  # Queue stores (current position, path taken so far)
+    visited = set()
+
+    while queue:
+        (x, y), path = queue.popleft()
+
+        if (x, y) == goal:
+            return path  # Found the shortest path
+
+        visited.add((x, y))  # Mark the cell as visited
+
+        # Possible moves: left, right, up, down
+        moves = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        
+        for dx, dy in moves:
+            nx, ny = x + dx, y + dy  # Calculate new position
+            
+            # Check if the move is within bounds and is not a wall (1)
+            if 0 <= nx < len(maze[0]) and 0 <= ny < len(maze):
+                if maze[ny][nx] == 0 and (nx, ny) not in visited:
+                    queue.append(((nx, ny), path + [(nx, ny)]))  # Add to queue
+
+    return None  # No path found
+
+def main():
+    """
+    Runs the game loop. The player can press 'E' to show the solution path in the same window.
+    """
+    pygame.init()
+    screen = pygame.display.set_mode((500, 500))
+    pygame.display.set_caption("Maze Game")
+
+    # Colors
+    WHITE = (255, 255, 255)
+    BLACK = (0, 0, 0)
+    GREEN = (0, 255, 0)  # Solution path color
+    BLUE = (0, 0, 255)  # Player color
+    RED = (255, 0, 0)  # Goal color
+
+    # Game settings
+    ROWS, COLS = 10, 10
+    TILE_SIZE = 500 // COLS
+    clock = pygame.time.Clock()
+
+    # Initial player position
+    player_x, player_y = 1, 1
+    goal_x, goal_y = 8, 8
+    show_solution = False  # Solution path is hidden initially
+
+    # Solve the maze **before the loop starts** so it's ready when needed
+    solution_path = solve_maze(maze)
+
+    running = True
+    while running:
+        screen.fill(WHITE)  # Clear the screen
+
+        # Draw the maze
+        for row in range(ROWS):
+            for col in range(COLS):
+                if maze[row][col] == 1:
+                    pygame.draw.rect(screen, BLACK, (col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+
+        # Draw solution path (only if 'E' is pressed)
+        if show_solution and solution_path:
+            for (x, y) in solution_path:
+                pygame.draw.rect(screen, GREEN, (x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+
+        # Draw the player
+        pygame.draw.rect(screen, BLUE, (player_x * TILE_SIZE, player_y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+
+        # Draw the goal
+        pygame.draw.rect(screen, RED, (goal_x * TILE_SIZE, goal_y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+
+        pygame.display.update()  # Update the display
+        clock.tick(60)  # Limit FPS
+
+        # Event handling (key presses, quit)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            
+            if event.type == pygame.KEYDOWN:
+                # Player movement controls (WASD or arrow keys)
+                if event.key == pygame.K_LEFT or event.key == pygame.K_a:
+                    if maze[player_y][player_x - 1] == 0:
+                        player_x -= 1
+                elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
+                    if maze[player_y][player_x + 1] == 0:
+                        player_x += 1
+                elif event.key == pygame.K_UP or event.key == pygame.K_w:
+                    if maze[player_y - 1][player_x] == 0:
+                        player_y -= 1
+                elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
+                    if maze[player_y + 1][player_x] == 0:
+                        player_y += 1
+
+                # Reveal the solution path when pressing 'E' (in the same window)
+                if event.key == pygame.K_e:
+                    show_solution = True  # Activate solution display
+
+    pygame.quit()  # Close the game window
+
+# Run the game
+if __name__ == "__main__":
+    main()
