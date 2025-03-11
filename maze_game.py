@@ -68,8 +68,9 @@ def generate_maze():
     # The remaining code will generate a random number at a time, check if it has been visited before and if this is not the case add it to the solution path
     # The function returns a list of tuples which are the coordinates of the solution path
     # The path is terminated once the path hits an outer all in the maze
-
-    while True:
+    running = True
+    
+    while running:
         
         # Generate a random number betwwen 0 and 3
         random_number = random_number_generator()
@@ -140,17 +141,19 @@ def draw_player(player_x, player_y):
 def draw_goal(goal_x, goal_y):
     pygame.draw.rect(screen, RED, (goal_x * TILE_SIZE, goal_y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
 
-#player start position 
-player_x, player_y = 1, 1 # This could possibly be randomised
-
-# End goal position (bottom-right open space)
-goal_x, goal_y = 8, 8
-
-# Game loop 
-running = True
-clock = pygame.time.Clock()
-
 def main():
+
+    #player start position 
+    player_x, player_y = 1, 1 # This could possibly be randomised
+
+    # End goal position (bottom-right open space)
+    goal_x, goal_y = 8, 8
+
+    # Game loop 
+    clock = pygame.time.Clock()
+
+    running = True
+
     while running: #starts the game loop, will continously draw the maze, handle input, and update the display 
         #handle events (key presses and quit)
         for event in pygame.event.get(): #checks for events (e.g. key presses, closing window)
@@ -205,8 +208,8 @@ def main():
     pygame.quit()
 
 # Main code to run the game
-#if __name__ == "__main__":
-#    main()
+if __name__ == "__main__":
+    main()
 
 # code to generate a sample path
-print(generate_maze())
+#print(generate_maze())
