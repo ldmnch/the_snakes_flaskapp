@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="game-wrapper">
+    <h2><span class="emoji">🐍</span> Maze Challenge</h2>
+    <div id="maze-container"></div>
+    <button id="generate-maze-btn" class="maze-btn">Generate New Maze</button>
+    <button id="solve-maze-btn" class="maze-btn">Solve Maze</button>
+  </div>
+
+  <!-- Load JS -->
+  <script src="{{ url_for('static', filename='game.js') }}"></script>
+{% endblock %}
