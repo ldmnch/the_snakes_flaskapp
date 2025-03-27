@@ -1,62 +1,30 @@
 <!doctype html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>{% block title %} Maze Game{% endblock %}</title>
-        <style>
-            .container {
-                max-width: 800px; 
-                margin: 0 auto; 
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-            }
-            .menu {
-                list-style: none;
-                padding: 10px;
-                display: flex;
-                justify-content: center;
-            }
-            h1 {
-                font-size: 32px;
-                font-weight: bold;
-                font-style: normal;
-                color: black;
-                font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
-            }
-            h2 {
-                font-size: 16px;
-                font-weight: normal;
-                font-style: normal;
-                color: darkolivegreen;
-                font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
-            }
-            img {
-                width: 350px;
-                height: 350 px;
-            }
-        </style>
-    </head>
-    <body>
-        <header>
-            <div class="container">
-                {% block landing_content %}
-                <h1>Maze Game</h1>
-                <h2>landing page [internal]</h2>
-                <img src="{{ url_for('static', filename='snake_home.png') }}" alt="Snake">
-                <nav>
-                    <ul class="menu">
-                        <li><a href="{{ url_for('maze') }}"><button>Start Maze</button></a></li>
-                    </ul>
-                </nav>
-                {% endblock %}
-            </div>
-        </header>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Maze Game{% endblock %}</title>
 
-        <main>
-            {% block content %}{% endblock %}
-        </main>
-    </body>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- External CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <!-- Internal Styles (Logo size, etc.) -->
+  <style>
+    /* Adjusting the logo size */
+    img.logo-500 {
+      width: 500px;
+      height: auto;
+    }
+
+    /* Add any other internal styles here if necessary */
+  </style>
+</head>
+<body>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
 </html>

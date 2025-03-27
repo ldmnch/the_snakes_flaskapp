@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="game-wrapper">
+    <h2><span class="emoji">🐍</span> Maze Challenge</h2>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <div class="controls">
+        <button id="generate-maze-btn" class="maze-btn">Generate New Maze</button>
+        <select id="mazeSizeSelect">
+            <option value="3">Small (3x3)</option>
+            <option value="5" selected>Medium (5x5)</option>
+            <option value="7">Large (7x7)</option>
+            <option value="10">Extra Large (10x10)</option>
+        </select>
+        <button id="solve-maze-btn" class="maze-btn">Solve Maze</button>
+    </div>
+    <p id="statusMessage"></p>
+  </div>
+
+  <style>
+      body {
+          text-align: center;
+      }
+      .game-wrapper {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+      }
+      canvas {
+          border: 2px solid black;
+          background-color: white;
+      }
+      .controls {
+          margin-top: 10px;
+      }
+      .maze-btn {
+          margin: 5px;
+      }
+      #statusMessage {
+          font-size: 18px;
+          font-weight: bold;
+          margin-top: 10px;
+          color: green;
+      }
+  </style>
+
+  <script>
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      const newMazeBtn = document.getElementById("generate-maze-btn");
+      const solveMazeBtn = document.getElementById("solve-maze-btn");
+      const mazeSizeSelect = document.getElementById("mazeSizeSelect");
+      const statusMessage = document.getElementById("statusMessage");
+
+      let tileSize = 40;
+      let maze = [];
+      let player = { x: 1, y: 1 };
+      let goal = { x: 1, y: 1 }; // Set dynamically
+      let solutionPath = []; // Stores the path to solve the maze
+
+      function drawMaze() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          tileSize = Math.min(
+              Math.floor(canvas.width / maze[0].length),
+              Math.floor(canvas.height / maze.length)
+          );
+
+          for (let row = 0; row < maze.length; row++) {
+              for (let col = 0; col < maze[row].length; col++) {
+                  if (maze[row][col] === 1) {
+                      ctx.fillStyle = "black"; // Walls
+                  } else if (row === goal.y && col === goal.x) {
+                      ctx.fillStyle = "green"; // Goal
+                  } else {
+                      ctx.fillStyle = "white"; // Open path
+                  }
+                  ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
+              }
+          }
+
+          // Draw solution path if available
+          ctx.fillStyle = "blue";
+          solutionPath.forEach(([x, y]) => {
+              ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+          });
+
+          // Draw player
+          ctx.fillStyle = "red";
+          ctx.fillRect(player.x * tileSize, player.y * tileSize, tileSize, tileSize);
+      }
+
+      function findStartPosition() {
+          for (let y = 0; y < maze.length; y++) {
+              for (let x = 0; x < maze[y].length; x++) {
+                  if (maze[y][x] === 0) {
+                      return { x: x, y: y };
+                  }
+              }
+          }
+          return { x: 1, y: 1 };
+      }
+
+      function findGoalPosition() {
+          for (let y = maze.length - 1; y >= 0; y--) {
+              for (let x = maze[y].length - 1; x >= 0; x--) {
+                  if (maze[y][x] === 0) {
+                      return { x: x, y: y };
+                  }
+              }
+          }
+          return { x: maze[0].length - 2, y: maze.length - 2 }; // Default to bottom-right open space
+      }
+
+      function loadMaze(dimension) {
+          fetch(`/api/generate_maze/${dimension}`)
+              .then(response => response.json())
+              .then(data => {
+                  maze = data;
+                  player = findStartPosition();
+                  goal = findGoalPosition();
+                  solutionPath = []; // Clear any previous solution
+                  statusMessage.textContent = ""; // Clear success message
+                  drawMaze();
+              })
+              .catch(error => {
+                  console.error("Error loading maze:", error);
+              });
+      }
+
+      function movePlayer(dx, dy) {
+          let newX = player.x + dx;
+          let newY = player.y + dy;
+
+          if (maze[newY] && maze[newY][newX] === 0) {
+              player.x = newX;
+              player.y = newY;
+              drawMaze();
+
+              if (player.x === goal.x && player.y === goal.y) {
+                  statusMessage.textContent = "🎉 You reached the exit! Well done!";
+              }
+          }
+      }
+
+      function solveMaze() {
+          let queue = [[player.x, player.y]];
+          let visited = new Set();
+          let parent = {};
+          let found = false;
+
+          while (queue.length > 0) {
+              let [x, y] = queue.shift();
+              let key = `${x},${y}`;
+              if (visited.has(key)) continue;
+              visited.add(key);
+
+              if (x === goal.x && y === goal.y) {
+                  found = true;
+                  break;
+              }
+
+              let moves = [
+                  [x + 1, y],
+                  [x - 1, y],
+                  [x, y + 1],
+                  [x, y - 1]
+              ];
+
+              for (let [nx, ny] of moves) {
+                  let nKey = `${nx},${ny}`;
+                  if (!visited.has(nKey) && maze[ny] && maze[ny][nx] === 0) {
+                      queue.push([nx, ny]);
+                      parent[nKey] = [x, y]; // Track parent node for path reconstruction
+                  }
+              }
+          }
+
+          if (found) {
+              let path = [];
+              let [x, y] = [goal.x, goal.y];
+
+              while (x !== player.x || y !== player.y) {
+                  path.push([x, y]);
+                  [x, y] = parent[`${x},${y}`];
+              }
+
+              solutionPath = path.reverse();
+              drawMaze();
+          } else {
+              statusMessage.textContent = "❌ No solution found!";
+          }
+      }
+
+      document.addEventListener("keydown", function (event) {
+          if (statusMessage.textContent) return; // Stop movement after reaching the goal
+
+          const moves = { "ArrowUp": [0, -1], "ArrowDown": [0, 1], "ArrowLeft": [-1, 0], "ArrowRight": [1, 0] };
+          if (moves[event.key]) {
+              movePlayer(...moves[event.key]);
+          }
+      });
+
+      newMazeBtn.addEventListener("click", function () {
+          loadMaze(parseInt(mazeSizeSelect.value));
+      });
+
+      solveMazeBtn.addEventListener("click", solveMaze);
+
+      loadMaze(5);
+  </script>
+{% endblock %}

@@ -3,21 +3,21 @@ from maze_generator import get_maze_as_list
 
 app = Flask(__name__)
 
+# Homepage Route
 @app.route("/")
 @app.route("/home")
-def default_home():
-    return render_template('base.html')
-
-@app.route("/game")
-@app.route("/index")
-@app.route("/start")
-@app.route("/maze")
-def maze():
+def home():
     return render_template("index.html")
 
+# Maze/Game Route
+@app.route("/maze")
+def maze():
+    return render_template("game.html")
+
+# API Route for Maze Generation
 @app.route("/api/generate_maze/<int:dimension>")
 def generate_maze_api(dimension):
-    # Limit the dimension to a reasonable range
+    # Limit dimension to a reasonable range (between 3 and 10)
     dimension = max(3, min(dimension, 10))
     maze_data = get_maze_as_list(dimension)
     return jsonify(maze_data)
