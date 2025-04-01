@@ -18,9 +18,9 @@ def maze():
 # API Route for Maze Generation
 @app.route("/api/generate_maze/<int:dimension>")
 def generate_maze_api(dimension):
-    # Limit dimension to a reasonable range (between 3 and 10)
-    dimension = max(3, min(dimension, 10))
+
     maze_data = get_maze_as_list(dimension)
+    
     return jsonify(maze_data)
 
 # API Route for Maze Solving
