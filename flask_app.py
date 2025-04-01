@@ -1,5 +1,6 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 from maze_generator import get_maze_as_list
+from maze_solver import find_path_bfs
 
 app = Flask(__name__)
 
@@ -21,6 +22,25 @@ def generate_maze_api(dimension):
     dimension = max(3, min(dimension, 10))
     maze_data = get_maze_as_list(dimension)
     return jsonify(maze_data)
+
+# API Route for Maze Solving
+@app.route("/api/solve_maze", methods=['POST'])
+def solve_maze_api():
+    data = request.get_json()
+    if not all(k in data for k in ('maze', 'start', 'goal')):
+        return jsonify({"error": "Missing maze, start, or goal data"}), 400
+
+    try:
+        # Convert JS {x, y} to Python (x, y)
+        start_tuple = (data['start']['x'], data['start']['y'])
+        goal_tuple = (data['goal']['x'], data['goal']['y'])
+
+        path = find_path_bfs(data['maze'], start_tuple, goal_tuple)
+        return jsonify({"path": path}) # path will be list or None
+
+    except Exception as e:
+        print(f"Solver Error: {e}") # Log error server-side
+        return jsonify({"error": "Failed to solve maze"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
