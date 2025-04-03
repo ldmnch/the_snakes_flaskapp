@@ -1,7 +1,7 @@
 # Maze Game 
 
-**Course:** Data Structures & Algorithms (Hertie School)
-**Instructor:** Meysam Goodarzi
+**Course:** Data Structures & Algorithms (Hertie School)  
+**Instructor:** Meysam Goodarzi  
 **Group members:** Ashley Razo, Nadine Daum, Laia Domenech Burin, Franco Bastida, Mika Erik Moeser, Nicolas Reichardt
 
 ---  
