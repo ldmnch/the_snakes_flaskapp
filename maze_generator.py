@@ -114,5 +114,3 @@ def get_maze_as_list(dimension=5):
     maze_list = numpy_maze.tolist()
     
     return maze_list
-
-print(get_maze_as_list(5))

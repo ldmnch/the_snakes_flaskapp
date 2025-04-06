@@ -3,6 +3,8 @@
 {% block content %}
   <div class="game-wrapper">
     <h2><span class="emoji">🐍</span> Maze Challenge</h2>
+    <p id="instructions" class="instructions">Use W, A, S and D to move throuh the maze. Reach the green square to win!</p>
+    <p id="statusMessage" class="top-status"></p>
     <div id="canvas-container"> {# Optional container for positioning #}
         <canvas id="gameCanvas"></canvas>
     </div>
@@ -18,7 +20,6 @@
         </select>
         <button id="solve-maze-btn" class="maze-btn">Solve Maze</button>
     </div>
-    <p id="statusMessage"></p>
   </div>
 
   <style>
@@ -79,17 +80,41 @@
       #statusMessage {
           font-size: 18px;
           font-weight: bold;
-          margin-top: 10px;
+          margin-top: 5px;
           color: lightgreen;
+          min-height: 27px;
+      }
+      #instructions {
+          font-size: 14px;
+          font-weight: normal;
+          margin-top: 5px;
+          color: white;
           min-height: 27px;
       }
        .emoji {
           font-size: 2rem;
           margin-right: 0.3rem;
       }
+      .top-status {
+        margin-bottom: 10px;
+      }
   </style>
 
   <script>
+      let trophyImg;
+
+      function preloadTrophyImage(){
+        trophyImg = new Image();
+        trophyImg.src = "/static/winnertrophy.png";
+        trophyImg.onload = () => {
+            console.log("Trophy image loaded!");
+        };
+        trophyImg.onerror = () => {
+            console.error("Error loading trophy image.");
+        };
+      }
+      preloadTrophyImage();
+
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
       const newMazeBtn = document.getElementById("generate-maze-btn");
@@ -171,6 +196,17 @@
           return { x: Math.max(1, maze[0].length - 2), y: Math.max(1, maze.length - 2) };
       }
 
+      function preloadTrophyImage() {
+        trophyImg = new Image();
+        trophyImg.src = "/static/winnertrophy.png";  // Adjust the path if necessary
+        trophyImg.onload = () => {
+            console.log("Trophy image loaded successfully!");
+        };
+        trophyImg.onerror = () => {
+            console.error("Error loading trophy image.");
+        };
+    }
+
       function loadMaze(dimension) {
           statusMessage.textContent = "Loading Maze...";
           fetch(`/api/generate_maze/${dimension}`)
@@ -196,6 +232,19 @@
                   maze = [];
                   ctx.clearRect(0, 0, canvas.width, canvas.height);
               });
+
+              let instructions = document.getElementById("instructions");
+              if (!instructions) { // Create new instructions if they don't exist
+                  instructions = document.createElement("p");
+                  instructions.id = "instructions";
+                  instructions.className = "instructions";
+                  instructions.textContent = "Use W, A, S and D to move through the maze. Reach the green square to win!";
+                  
+                  const gameWrapper = document.querySelector(".game-wrapper");
+                  gameWrapper.insertBefore(instructions, statusMessage);
+                } else {
+                    instructions.style.display = "block";
+                }
       }
 
       function movePlayer(dx, dy) {
@@ -210,9 +259,30 @@
               drawMaze();
 
               if (player.x === goal.x && player.y === goal.y) {
-                  statusMessage.textContent = "🎉 You reached the exit! Well done!";
-              }
+                  statusMessage.textContent = "🎉You reached the exit! Well done!🎉 ";
+                  drawTrophy(player.x, player.y); // Displays trophy after winning.
+                  removeInstructions(); // Removes instructions once player wins.
+                }
           }
+      }
+
+      // After movePlayer notice, so when the player reaches the matching solution, a trophy is rendered
+
+      function drawTrophy(x, y) {
+
+        if (trophyImg && trophyImg.complete){
+            ctx.drawImage(trophyImg, x * tileSize, y * tileSize, tileSize, tileSize);
+        } 
+        else{
+            console.error("Trophy image not loaded.")
+        }
+      }
+
+      function removeInstructions(){
+        const instructions = document.getElementById("instructions");
+        if (instructions){
+            instructions.remove(); // Completely remove the element
+        }
       }
 
       async function solveMaze() {
@@ -283,6 +353,15 @@
               timeout = setTimeout(later, wait);
           };
       };
+
+      function drawTrophy(x, y) {
+        if (trophyImg.complete) {
+            ctx.drawImage(trophyImg, x * tileSize, y * tileSize, tileSize, tileSize);
+        } 
+        else {
+        console.error("Trophy image not loaded.");  
+        }
+}
 
       const debouncedDrawMaze = debounce(() => {
           if (maze && maze.length > 0) {
