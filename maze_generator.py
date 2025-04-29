@@ -115,4 +115,4 @@ def get_maze_as_list(dimension=5):
     
     return maze_list
 
-print(get_maze_as_list(5))
+#print(get_maze_as_list(5))
