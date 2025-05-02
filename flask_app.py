@@ -18,16 +18,32 @@ def maze():
 # API Route for Maze Generation
 @app.route("/api/generate_maze/<int:dimension>")
 def generate_maze_api(dimension):
+    """
+    API endpoint to generate a maze of a given dimension using the Maze class.
 
+    Args:
+        dimension (int): The size of the maze (number of cells in one dimension).
+
+    Returns:
+        Response: A JSON response containing the generated maze as a 2D list.
+    """
     maze = Maze(dimension=dimension)
     maze.generate()
     maze_list = maze.to_list()
 
-    return jsonify(maze_list) 
+    return jsonify(maze_list)
 
 # API Route for Maze Solving
 @app.route("/api/solve_maze", methods=['POST'])
 def solve_maze_api():
+    """
+    API endpoint to solve a maze using the MazeSolver class.
+
+    Expects JSON with 'maze' (2D list), 'start' (dict with x, y), and 'goal' (dict with x, y).
+
+    Returns:
+        Response: A JSON response with the path from start to goal, or an error message.
+    """
     data = request.get_json()
     if not all(k in data for k in ('maze', 'start', 'goal')):
         return jsonify({"error": "Missing maze, start, or goal data"}), 400
@@ -35,15 +51,15 @@ def solve_maze_api():
     try:
         # Convert JS {x, y} to Python (x, y)
         start_tuple = (data['start']['x'], data['start']['y'])
-        goal_tuple = (data['goal']['x'], data['goal']['y'])
+        goal_tuple  = (data['goal']['x'], data['goal']['y'])
 
         maze_solver = MazeSolver(data['maze'])
-
         path = maze_solver.solve(start_tuple, goal_tuple)
-        return jsonify({"path": path}) # path will be list or None
+
+        return jsonify({"path": path})  # path will be list or None
 
     except Exception as e:
-        print(f"Solver Error: {e}") # Log error server-side
+        print(f"Solver Error: {e}")  # Log error server-side
         return jsonify({"error": "Failed to solve maze"}), 500
 
 if __name__ == "__main__":
