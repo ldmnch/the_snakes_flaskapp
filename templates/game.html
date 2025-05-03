@@ -176,7 +176,17 @@
 
           ctx.fillStyle = "red";
           ctx.fillRect(player.x * tileSize, player.y * tileSize, tileSize, tileSize);
+
+          // After movePlayer notice, so when the player reaches the matching solution, a trophy is rendered - This comment seems misplaced, should relate to drawTrophy perhaps? Keeping as is.
+          // Check if game is already won to redraw trophy after resize
+          if (statusMessage.textContent.includes("🎉")) {
+                // If the trophy image exists and is loaded, draw it at the goal position
+                if (trophyImg && trophyImg.complete) {
+                    drawTrophy(goal.x, goal.y); // Draw at goal, not necessarily player position if solved/resized
+                }
+          }
       }
+
 
       function findStartPosition() {
           for (let y = 0; y < maze.length; y++) {
@@ -184,7 +194,7 @@
                   if (maze[y][x] === 0) { return { x: x, y: y }; }
               }
           }
-          return { x: 1, y: 1 };
+          return { x: 1, y: 1 }; // Fallback
       }
 
       function findGoalPosition() {
@@ -226,6 +236,19 @@
                   solutionPath = []; // Clear any previous solution
                   statusMessage.textContent = ""; // Clear success message
                   drawMaze();
+
+                  let instructions = document.getElementById("instructions");
+                  if (!instructions) { // Create new instructions if they don't exist
+                      instructions = document.createElement("p");
+                      instructions.id = "instructions";
+                      instructions.className = "instructions";
+                      instructions.textContent = "Use W, A, S and D to move through the maze. Reach the green square to win!";
+
+                      const gameWrapper = document.querySelector(".game-wrapper");
+                      gameWrapper.insertBefore(instructions, statusMessage);
+                  } else {
+                      instructions.style.display = "block";
+                  }
               })
               .catch(error => {
                   console.error("Error loading maze:", error);
@@ -233,19 +256,6 @@
                   maze = [];
                   ctx.clearRect(0, 0, canvas.width, canvas.height);
               });
-
-              let instructions = document.getElementById("instructions");
-              if (!instructions) { // Create new instructions if they don't exist
-                  instructions = document.createElement("p");
-                  instructions.id = "instructions";
-                  instructions.className = "instructions";
-                  instructions.textContent = "Use W, A, S and D to move through the maze. Reach the green square to win!";
-                  
-                  const gameWrapper = document.querySelector(".game-wrapper");
-                  gameWrapper.insertBefore(instructions, statusMessage);
-                } else {
-                    instructions.style.display = "block";
-                }
       }
 
       function movePlayer(dx, dy) {
@@ -257,23 +267,35 @@
           if (maze[newY] && typeof maze[newY][newX] !== 'undefined' && maze[newY][newX] === 0) {
               player.x = newX;
               player.y = newY;
-              drawMaze();
+              drawMaze(); // Redraw the maze with the new player position
 
               if (player.x === goal.x && player.y === goal.y) {
                   statusMessage.textContent = "🎉You reached the exit! Well done!🎉 ";
                   drawTrophy(player.x, player.y); // Displays trophy after winning.
                   removeInstructions(); // Removes instructions once player wins.
-                }
+
+                  try {
+                      // Create an Audio object pointing to the sound file in the static folder.
+                      const winSound = new Audio('/static/snake_sound.m4a');
+                      // Attempt to play the sound. play() returns a Promise.
+                      winSound.play()
+                          .catch(error => {
+                              // Log any errors that occur during playback attempt
+                              // (e.g., browser restrictions, file not found).
+                              console.error("Error playing win sound:", error);
+                          });
+                  } catch (e) {
+                      // Log any errors during the creation of the Audio object itself.
+                      console.error("Could not create audio object for win sound:", e);
+                  }
+              }
           }
       }
 
-      // After movePlayer notice, so when the player reaches the matching solution, a trophy is rendered
-
       function drawTrophy(x, y) {
-
         if (trophyImg && trophyImg.complete){
             ctx.drawImage(trophyImg, x * tileSize, y * tileSize, tileSize, tileSize);
-        } 
+        }
         else{
             console.error("Trophy image not loaded.")
         }
@@ -290,7 +312,7 @@
           if (!maze || maze.length === 0) return;
 
           statusMessage.textContent = "Solving...";
-          solutionPath = [];
+          solutionPath = []; // Clear previous solution path
 
           try {
               const response = await fetch('/api/solve_maze', {
@@ -307,7 +329,7 @@
               const result = await response.json();
 
               if (result.path && result.path.length > 0) {
-                  solutionPath = result.path;
+                  solutionPath = result.path; // Store the received path
                   statusMessage.textContent = "Solution found!";
               } else {
                   statusMessage.textContent = "❌ No solution found!";
@@ -328,20 +350,20 @@
             "ArrowLeft": [-1, 0], "a": [-1, 0], "ArrowRight": [1, 0], "d": [1, 0]
           };
           if (moves[event.key]) {
-              event.preventDefault();
-              movePlayer(...moves[event.key]);
+              event.preventDefault(); // Prevent default browser action (e.g., scrolling)
+              movePlayer(...moves[event.key]); // Call movePlayer with dx, dy
           }
            if (event.key === 'e') {
-               event.preventDefault();
-               solveMaze();
+               event.preventDefault(); // Prevent default browser action
+               solveMaze(); // Call the maze solver
            }
       });
 
       newMazeBtn.addEventListener("click", function () {
-          loadMaze(parseInt(mazeSizeSelect.value));
+          loadMaze(parseInt(mazeSizeSelect.value)); // Load maze with selected dimension
       });
 
-      solveMazeBtn.addEventListener("click", solveMaze);
+      solveMazeBtn.addEventListener("click", solveMaze); // Attach solver to button click
 
       function debounce(func, wait) {
           let timeout;
@@ -351,16 +373,16 @@
                   func(...args);
               };
               clearTimeout(timeout);
-              timeout = setTimeout(later, wait);
+              timeout = setTimeout(later, wait); // Set new timeout
           };
       };
 
       function drawTrophy(x, y) {
         if (trophyImg.complete) {
             ctx.drawImage(trophyImg, x * tileSize, y * tileSize, tileSize, tileSize);
-        } 
+        }
         else {
-        console.error("Trophy image not loaded.");  
+        console.error("Trophy image not loaded.");
         }
 }
 
