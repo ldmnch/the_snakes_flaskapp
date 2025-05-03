@@ -1,7 +1,7 @@
 # test_maze_solver.py
 
 import pytest
-from maze_solver import find_path_bfs
+from src.maze_solver import MazeSolver
 
 # --- Correctness Tests ---
 
@@ -18,7 +18,8 @@ def test_find_path_simple():
     goal = (3, 3)
     # Expected path goes down, then right
     expected_path = [(1, 2), (1, 3), (2, 3), (3, 3)]
-    actual_path = find_path_bfs(maze, start, goal)
+    maze_solver = MazeSolver(maze)
+    actual_path = maze_solver.solve(start, goal)
     assert actual_path == expected_path
 
 def test_no_path_found():
@@ -33,7 +34,9 @@ def test_no_path_found():
     start = (1, 1)
     goal = (1, 3)
     expected_path = None
-    actual_path = find_path_bfs(maze, start, goal)
+
+    maze_solver = MazeSolver(maze)
+    actual_path = maze_solver.solve(start, goal)
     assert actual_path == expected_path
 
 def test_start_equals_goal():
@@ -47,7 +50,8 @@ def test_start_equals_goal():
     goal = (1, 1)
     # Path excludes start, so should be empty list
     expected_path = []
-    actual_path = find_path_bfs(maze, start, goal)
+    maze_solver = MazeSolver(maze)
+    actual_path = maze_solver.solve(start, goal)
     assert actual_path == expected_path
 
 def test_path_requires_backtracking():
@@ -69,7 +73,8 @@ def test_path_requires_backtracking():
         (2, 1), (3, 1), (3, 2), (3, 3), (2, 3), (1, 3),
         (1, 4), (1, 5), (2, 5), (3, 5), (4, 5), (5, 5)
     ]
-    actual_path = find_path_bfs(maze, start, goal)
+    maze_solver = MazeSolver(maze)
+    actual_path = maze_solver.solve(start, goal)
     assert actual_path == expected_path
 
 def test_path_boundaries():
@@ -86,7 +91,8 @@ def test_path_boundaries():
     # Path: (0,0)->(1,0)->(1,1)->(2,1)->(3,1)->(3,2)->(3,3)->(4,3) is one possibility
     # Let BFS find it, just check it finds *a* valid path of correct length
     expected_min_len = 7 # Manually count shortest path steps (8 nodes total - 1 start)
-    actual_path = find_path_bfs(maze, start, goal)
+    maze_solver = MazeSolver(maze)
+    actual_path = maze_solver.solve(start, goal)
     assert actual_path is not None
     assert len(actual_path) == expected_min_len
     # Optionally, check the last step is the goal
@@ -110,7 +116,8 @@ def test_large_maze_path():
     ]
     start = (1, 1)
     goal = (9, 9)
-    actual_path = find_path_bfs(maze, start, goal)
+    maze_solver = MazeSolver(maze)
+    actual_path = maze_solver.solve(start, goal)
     assert actual_path is not None
     # Verify the path is valid (connects start to goal through 0s)
     assert len(actual_path) > 0 # Path must have steps
