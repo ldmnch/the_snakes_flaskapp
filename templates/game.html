@@ -5,7 +5,9 @@
     <h2><span class="emoji">🐍</span> Maze Challenge</h2>
     <p id="instructions" class="instructions">Use W, A, S and D to move through the maze. Reach the green square to win!</p>
     <p id="statusMessage" class="top-status"></p>
-    <div id="canvas-container"> {# Optional container for positioning #}
+    <p class="top-status">Time: <span id="timerDisplay">00:00</span></p>
+
+    <div id="canvas-container">
         <canvas id="gameCanvas"></canvas>
     </div>
     <div class="controls">
@@ -21,483 +23,267 @@
         </select>
         <button id="solve-maze-btn" class="maze-btn">Solve Maze</button>
         <button id="mute-btn" class="maze-btn">🔇 Mute</button>
+        <!-- ADD FOG TOGGLE BUTTON -->
+        <button id="toggleFogBtn" class="maze-btn">Disable Fog</button>
+        <!-- END FOG TOGGLE BUTTON -->
     </div>
+
+    <!-- LEADERBOARD FILTER CONTROLS -->
+    <div class="leaderboard-filter-container">
+         <label for="leaderboardFilterSelect">Filter Size:</label>
+         <select id="leaderboardFilterSelect">
+             <option value="all" selected>All Sizes</option>
+             <option value="3">Small (3x3)</option>
+             <option value="5">Medium (5x5)</option>
+             <option value="7">Large (7x7)</option>
+             <option value="10">XL (10x10)</option>
+             <option value="15">VL (15x15)</option>
+             <option value="20">XXL (20x20)</option>
+             <option value="100">HUGE (100x100)</option>
+         </select>
+    </div>
+
+    <div id="leaderboardContainer">
+        <h2>🏆 Leaderboard 🏆</h2>
+        <ol id="leaderboardList">
+            <li class="message">Initializing...</li>
+        </ol>
+    </div>
+
+    <!-- ACHIEVEMENTS SECTION -->
+    <button id="toggleAchievementsBtn" class="maze-btn" style="margin-top: 15px;">View Achievements</button>
+    <div id="achievementsContainer" style="display: none;">
+        <h2>Achievements</h2>
+        <ul id="achievementsList">
+            <li class="message">Loading achievements...</li>
+        </ul>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container"></div>
+
   </div>
 
   <style>
-      body {
-          text-align: center;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          min-height: 100vh;
-          margin: 0;
-      }
-
-      .game-wrapper {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
-        margin-top: 1rem;
-        width: 100%;
-        max-width: 1400px;
-        padding: 0 1rem;
-        box-sizing: border-box;
-      }
-
-      #canvas-container {
-        line-height: 0;
-        width: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-
-      #gameCanvas {
-          display: block;
-          max-width: 95vw;
-          max-height: 80vh;
-          border: 2px solid white;
-          background-color: white;
-      }
-
-      .controls {
-          margin-top: 15px;
-          display: flex; 
-          flex-wrap: wrap; 
-          justify-content: center;
-          align-items: center; 
-      }
-      .maze-btn, #mazeSizeSelect { 
-          padding: 0.6rem 1.2rem;
-          font-weight: 600;
-          border-radius: 1rem;
-          border: none;
-          background-color: white;
-          color: black;
-          cursor: pointer;
-          margin: 0.5rem;
-          font-family: 'Poppins', sans-serif;
-          vertical-align: middle; 
-      }
-      .maze-btn:hover, #mazeSizeSelect:hover {
-          background-color: #eee;
-      }
-      #statusMessage {
-          font-size: 18px;
-          font-weight: bold;
-          margin-top: 5px;
-          color: lightgreen;
-          min-height: 27px;
-      }
-      #instructions {
-          font-size: 14px;
-          font-weight: normal;
-          margin-top: 5px;
-          color: white;
-          min-height: 27px;
-      }
-       .emoji {
-          font-size: 2rem;
-          margin-right: 0.3rem;
-      }
-      .top-status {
-        margin-bottom: 10px;
-      }
+      /* --- Paste ALL styles from previous version --- */
+      body { text-align: center; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; font-family: 'Poppins', sans-serif; color: white; background-color: #111; background-image: url("{{ url_for('static', filename='maze_bg.jpg') }}"); background-size: cover; background-position: center; background-repeat: no-repeat; }
+      .game-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; margin-top: 1rem; width: 100%; max-width: 1400px; padding: 0 1rem; box-sizing: border-box; }
+      h2 { color: white; margin-bottom: 0.5rem; }
+      .emoji { font-size: 2rem; margin-right: 0.3rem; }
+      .top-status, #instructions { font-size: 16px; font-weight: normal; margin-top: 5px; margin-bottom: 5px; color: white; min-height: 24px; text-align: center; }
+      #statusMessage { font-weight: bold; color: lightgreen; }
+      #canvas-container { line-height: 0; width: 100%; display: flex; justify-content: center; align-items: center; margin-top: 10px; margin-bottom: 10px; }
+      #gameCanvas { display: block; max-width: 95vw; max-height: 70vh; border: 2px solid white; background-color: white; }
+      .controls { margin-top: 15px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; width: 100%; }
+      .maze-btn, #mazeSizeSelect { padding: 0.6rem 1.2rem; font-size: 0.9rem; font-weight: 600; border-radius: 1rem; border: none; background-color: white; color: black; cursor: pointer; margin: 0; font-family: 'Poppins', sans-serif; vertical-align: middle; }
+      .maze-btn:hover, #mazeSizeSelect:hover { background-color: #eee; }
+      #timerDisplay { font-weight: bold; color: #FFD700; margin-left: 5px; min-width: 50px; display: inline-block; }
+      .leaderboard-filter-container { margin-top: 20px; margin-bottom: 5px; text-align: center; color: #ccc; }
+      .leaderboard-filter-container label { margin-right: 8px; font-size: 0.9rem; }
+      #leaderboardFilterSelect { padding: 0.3rem 0.6rem; border-radius: 0.5rem; border: 1px solid #ccc; background-color: #333; color: white; font-family: 'Poppins', sans-serif; cursor: pointer; min-width: 150px; }
+      #leaderboardFilterSelect:hover { border-color: white; }
+      #leaderboardContainer { margin-top: 5px; margin-bottom: 10px; width: 90%; max-width: 450px; background-color: rgba(0, 0, 0, 0.4); border: 1px solid #ccc; border-radius: 8px; padding: 15px 20px; color: white; text-align: left; box-sizing: border-box; }
+      #leaderboardContainer h2 { text-align: center; margin-top: 0; margin-bottom: 15px; color: #FFD700; font-size: 1.4rem; }
+      #leaderboardList { list-style-type: decimal; padding-left: 25px; margin: 0; max-height: 200px; overflow-y: auto; color: #eee; }
+      #leaderboardList li { margin-bottom: 6px; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 5px; }
+      #leaderboardList li:empty, #leaderboardList li.message { list-style-type: none; text-align: center; font-style: italic; color: #bbb; padding-left: 0; }
+      #toggleAchievementsBtn { margin-top: 15px; }
+      #achievementsContainer { display: none; margin-top: 15px; margin-bottom: 20px; width: 90%; max-width: 500px; background-color: rgba(0, 0, 0, 0.5); border: 1px solid #aaa; border-radius: 8px; padding: 15px 20px; color: white; box-sizing: border-box; }
+      #achievementsContainer h2 { text-align: center; margin-top: 0; margin-bottom: 15px; color: #aaa; font-size: 1.4rem; }
+      #achievementsList { list-style-type: none; padding: 0; margin: 0; max-height: 250px; overflow-y: auto; }
+      #achievementsList li.achievement-item { background-color: rgba(255, 255, 255, 0.05); margin-bottom: 8px; padding: 10px 15px; border-radius: 4px; border-left: 5px solid #555; transition: all 0.3s ease; }
+      #achievementsList li.locked { opacity: 0.6; }
+      #achievementsList li.unlocked { border-left-color: #FFD700; opacity: 1.0; }
+      #achievementsList li strong { color: #eee; display: block; margin-bottom: 3px; font-size: 1.05rem; }
+      #achievementsList li span { font-size: 0.85rem; color: #ccc; }
+      #achievementsList li.message { text-align: center; font-style: italic; color: #bbb; background-color: transparent; border: none; opacity: 1; }
+      #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column-reverse; align-items: flex-end; }
+      .toast-notification { background-color: rgba(0, 0, 0, 0.8); color: #FFD700; padding: 12px 20px; border-radius: 5px; margin-top: 10px; font-size: 0.9rem; border: 1px solid #FFD700; box-shadow: 0 2px 10px rgba(0,0,0,0.5); opacity: 0; transform: translateX(100%); transition: opacity 0.5s ease, transform 0.5s ease; }
+      .toast-notification.show { opacity: 1; transform: translateX(0); }
+      /* No additional CSS needed for toggleFogBtn unless desired */
   </style>
 
   <script>
-      let trophyImg;
+      // --- Global Variables ---
+      let trophyImg; let backgroundMusic; let musicStarted = false; let isMuted = false;
+      let startTime = null; let timerInterval = null; let elapsedSeconds = 0; let gameWon = false;
+      let tileSize = 10; let maze = []; let player = { x: 1, y: 1 }; let goal = { x: 1, y: 1 };
+      let solutionPath = []; let playerTrailHistory = [];
+      const MAX_TRAIL_LENGTH = 8; const TRAIL_COLOR_RGB = "255, 0, 0";
+      const TRAIL_MAX_ALPHA = 0.6; const TRAIL_MIN_ALPHA = 0.05;
+      let currentMazeDimension = 5; let allLeaderboardScores = [];
+      let unlockedAchievements = new Set();
+      let achievementState = { mazeCompletions: 0 };
+      const FOG_HIDDEN = 0; const FOG_VISITED = 1; const FOG_VISIBLE = 2;
+      const VISIBILITY_DEPTH = 3; const VISITED_OVERLAY_COLOR = "rgba(80, 80, 80, 0.6)";
+      const HIDDEN_COLOR = "black";
+      let visibilityGrid = [];
 
-      // --- Audio Setup ---
-      let backgroundMusic;
-      let musicStarted = false; // Flag to track if music has been successfully started at least once
-      let isMuted = false;
-      const muteBtn = document.getElementById('mute-btn');
+      // --- ADD FOG OF WAR STATE ---
+      let isFogOfWarEnabled = true; // Fog is ON by default
+      // --- END FOG OF WAR STATE ---
 
-      function setupAudio() {
-          try {
-              // Create the Audio object for background music
-              backgroundMusic = new Audio('/static/background_music.m4a'); // <--- YOUR MUSIC FILE PATH
-              backgroundMusic.loop = true; // Make it loop
-              backgroundMusic.volume = 0.3; // Set initial volume (optional, 0.0 to 1.0)
+      // --- Achievement Definitions ---
+      const ACHIEVEMENTS_DEFINITIONS = { /* ... */
+          'first_steps': { name: 'First Steps', description: 'Complete your first maze.', check: (e, s) => s.mazeCompletions >= 1 },
+          'medium_well_done': { name: 'Medium Well Done', description: 'Complete a Medium (5x5) maze.', check: (e, s) => e.dimension === 5 },
+          'maze_master': { name: 'Maze Master', description: 'Complete a 7x7 or larger maze.', check: (e, s) => e.dimension >= 7 },
+          'speed_demon': { name: 'Speed Demon', description: 'Complete a 5x5 maze in under 15 seconds.', check: (e, s) => e.dimension === 5 && e.time < 15 },
+          'persistent_explorer': { name: 'Persistent Explorer', description: 'Complete 10 mazes.', check: (e, s) => s.mazeCompletions >= 10 }
+      };
 
-              // Attempt to play music after first interaction later
-              console.log("Background music object created.");
+      // --- DOM Element References ---
+      let canvas, ctx, newMazeBtn, solveMazeBtn, mazeSizeSelect, statusMessage, controlsDiv, titleH2, instructionsP, timerDisplay, leaderboardList, leaderboardContainer, muteBtn, leaderboardFilterSelect, toggleAchievementsBtn, achievementsContainer, achievementsList, toastContainer, toggleFogBtn; // Added toggleFogBtn
 
-          } catch (e) {
-              console.error("Could not create audio object for background music:", e);
-          }
-      }
-       function toggleMute() {
-          if (!backgroundMusic) return; // Safety check
+      // --- Utility & Core Functions ---
+      function log(...args) { console.log("MAZE_DEBUG:", ...args); }
+      function logError(...args) { console.error("MAZE_ERROR:", ...args); }
+      function debounce(func, wait) { let timeout; return function executedFunction(...args) { const later = () => { clearTimeout(timeout); func(...args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; };
+      function escapeHtml(unsafe) { if (typeof unsafe !== 'string') return ''; return unsafe.replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">"); }
+      function setupAudio() { try { backgroundMusic = new Audio("{{ url_for('static', filename='background_music.m4a') }}"); backgroundMusic.loop = true; backgroundMusic.volume = 0.3; log("BG music created."); } catch (e) { logError("Audio object error:", e); } }
+      function toggleMute() { if (!backgroundMusic) return; isMuted = !isMuted; backgroundMusic.muted = isMuted; if (muteBtn) muteBtn.textContent = isMuted ? "🔊 Unmute" : "🔇 Mute"; log("Muted:", isMuted); }
+      function tryStartMusic() { if (backgroundMusic && (!musicStarted || backgroundMusic.paused)) { log("Attempting music play..."); backgroundMusic.play().then(() => { log("BG music playing."); musicStarted = true; backgroundMusic.muted = isMuted; }).catch(error => { console.warn("BG music fail:", error.message); if (!musicStarted) musicStarted = false; }); } else if (backgroundMusic && !backgroundMusic.paused) { backgroundMusic.muted = isMuted; } }
+      function playSound(soundFile, volume = 1.0) { try { const sound = new Audio(soundFile); sound.volume = volume; sound.play().catch(error => logError(`Sound error ${soundFile}:`, error)); log(`Playing: ${soundFile}`); } catch(e) { logError(`Sound fail ${soundFile}:`, e); } }
+      function formatTime(totalSeconds) { if (isNaN(totalSeconds) || !isFinite(totalSeconds) || totalSeconds < 0) return "00:00"; const minutes = Math.floor(totalSeconds / 60); const seconds = Math.floor(totalSeconds % 60); return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`; }
+      function updateTimerDisplay() { if (startTime === null || gameWon || !timerDisplay) return; elapsedSeconds = Math.max(0, (Date.now() - startTime) / 1000); timerDisplay.textContent = formatTime(elapsedSeconds); }
+      function startTimer() { if (startTime === null && !gameWon) { log("Starting timer..."); startTime = Date.now(); elapsedSeconds = 0; if (timerDisplay) timerDisplay.textContent = formatTime(0); if (timerInterval) clearInterval(timerInterval); updateTimerDisplay(); timerInterval = setInterval(updateTimerDisplay, 1000); } }
+      function stopTimer() { if (timerInterval !== null) { log("Stopping timer."); clearInterval(timerInterval); timerInterval = null; if (startTime) { elapsedSeconds = Math.max(0, (Date.now() - startTime) / 1000); log(`Final time: ${elapsedSeconds}s`); if (timerDisplay) timerDisplay.textContent = formatTime(elapsedSeconds); } } else if (startTime === null) { elapsedSeconds = 0; if (timerDisplay) timerDisplay.textContent = formatTime(0); } }
+      function resetTimer() { log("Resetting timer."); stopTimer(); startTime = null; elapsedSeconds = 0; if (timerDisplay) timerDisplay.textContent = formatTime(0); }
+      function preloadTrophyImage(){ trophyImg = new Image(); trophyImg.src = "{{ url_for('static', filename='winnertrophy.png') }}"; trophyImg.onload = () => log("Trophy loaded!"); trophyImg.onerror = () => logError("Trophy error."); }
+      function findStartPosition() { for (let y=0; y<maze.length; y++) for (let x=0; x<maze[y].length; x++) if (maze[y][x]===0) return {x,y}; logError("No start!"); return {x:1,y:1}; }
+      function findGoalPosition() { if (!maze || !maze.length) return {x:1,y:1}; for(let y=maze.length-1; y>=0; y--) for(let x=maze[y].length-1; x>=0; x--) if(maze[y][x]===0) return {x,y}; logError("No goal!"); return {x:Math.max(1,maze[0].length-2),y:Math.max(1,maze.length-2)}; }
 
-          isMuted = !isMuted;
-          backgroundMusic.muted = isMuted;
-          muteBtn.textContent = isMuted ? "🔊 Unmute" : "🔇 Mute";
-          console.log("Music muted:", isMuted);
-      }
+      // --- Leaderboard Functions ---
+      function displayLeaderboard(scores) { if (!leaderboardList || !leaderboardFilterSelect) { logError("LB list/filter missing!"); return; } const currentFilter = leaderboardFilterSelect.value; log(`Displaying ${scores?scores.length:0} scores for filter '${currentFilter}'.`); leaderboardList.innerHTML = ''; if (!scores || !Array.isArray(scores) || scores.length === 0) { leaderboardList.innerHTML = '<li class="message">No scores for this size!</li>'; return; } scores.forEach(score => { const li = document.createElement('li'); const name = score?.name ? escapeHtml(String(score.name)) : 'Unknown'; const time = (score?.time !== undefined) ? formatTime(Number(score.time)) : '--:--'; const dimension = score?.dimension ?? '?'; if (currentFilter === 'all') { li.textContent = `${name} - ${time} (${dimension}x${dimension})`; } else { li.textContent = `${name} - ${time}`; } leaderboardList.appendChild(li); }); }
+      function filterAndDisplayLeaderboard() { if (!leaderboardFilterSelect || !allLeaderboardScores) { logError("Cannot filter LB."); return; } const selectedDim = leaderboardFilterSelect.value; log(`Filtering LB for: ${selectedDim}`); let filteredScores = []; if (selectedDim === 'all') { filteredScores = allLeaderboardScores; } else { filteredScores = allLeaderboardScores.filter(score => score.dimension == selectedDim); } filteredScores.sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity)); displayLeaderboard(filteredScores); }
+      async function fetchLeaderboard() { log("Fetching full LB..."); if (!leaderboardList) return; leaderboardList.innerHTML = '<li class="message">Loading...</li>'; try { const response = await fetch('/api/get_leaderboard'); log(`LB fetch status: ${response.status}`); if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`); const scores = await response.json(); if (!Array.isArray(scores)) { logError("LB data not array:", scores); throw new Error("Invalid data format."); } allLeaderboardScores = scores; log(`Stored ${allLeaderboardScores.length} total scores.`); filterAndDisplayLeaderboard(); } catch (error) { logError("Error fetch/process LB:", error); allLeaderboardScores = []; if (leaderboardList) leaderboardList.innerHTML = '<li class="message">Error loading scores.</li>'; } }
+      async function submitScore(name, timeInSeconds) { const trimmedName = name ? name.trim() : ''; log(`Submitting score: N='${trimmedName}', T=${timeInSeconds}s, D=${currentMazeDimension}`); if (!trimmedName) { log("Submit cancelled."); fetchLeaderboard(); return; } if (typeof timeInSeconds !== 'number' || timeInSeconds < 0 || !isFinite(timeInSeconds)) { logError("Invalid time:", timeInSeconds); alert("Timer error."); return; } if (typeof currentMazeDimension !== 'number' || currentMazeDimension <= 0) { logError("Invalid dimension:", currentMazeDimension); alert("Maze dimension error."); return; } try { const scoreData = { name: trimmedName, time: timeInSeconds, dimension: currentMazeDimension }; const response = await fetch('/api/add_score', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(scoreData) }); log(`Add score status: ${response.status}`); if (!response.ok) { let errorMsg = `Error ${response.status}`; try { const errData = await response.json(); errorMsg = errData.error || errorMsg; } catch (e) { log("No error body."); } throw new Error(errorMsg); } log("Score submitted."); if (statusMessage) statusMessage.textContent = "Score saved!"; await fetchLeaderboard(); } catch (error) { logError("Error submitting score:", error); alert(`Failed to save score: ${error.message}`); } }
 
-      // Function to attempt playing music (handles browser autoplay restrictions)
-      function tryStartMusic() {
-          // Only try to start if it hasn't successfully started before OR if it's currently paused
-          if (backgroundMusic && (!musicStarted || backgroundMusic.paused)) {
-              backgroundMusic.play()
-                  .then(() => {
-                      console.log("Background music playing or resumed.");
-                      musicStarted = true; // Music has started successfully at least once
-                      // Ensure mute state is applied correctly
-                      backgroundMusic.muted = isMuted;
-                  })
-                  .catch(error => {
-                      // Autoplay was prevented OR another error occurred. User interaction is needed.
-                      console.warn("Background music play failed (may need interaction):", error.message);
-                      // Keep flag false if initial start failed, true if it failed on resume attempt
-                      if (!musicStarted) musicStarted = false;
-                  });
-          } else if (backgroundMusic && !backgroundMusic.paused) {
-              // If music is already playing and supposed to start, just ensure mute state is correct
-              backgroundMusic.muted = isMuted;
-          }
-      }
+      // --- Achievement Functions ---
+      function checkAchievementsOnCompletion(completionData) { log("Checking achievements:", completionData); achievementState.mazeCompletions++; log("Updated state:", achievementState); const newlyUnlocked = []; for (const [id, definition] of Object.entries(ACHIEVEMENTS_DEFINITIONS)) { if (!unlockedAchievements.has(id)) { try { if (definition.check(completionData, achievementState)) { log(`Criteria met: ${id}`); unlockedAchievements.add(id); newlyUnlocked.push(id); } } catch (e) { logError(`Error check ${id}:`, e); } } } log("Newly unlocked:", newlyUnlocked); return newlyUnlocked; }
+      function displayAchievements() { if (!achievementsList) { logError("Achievements list element missing!"); return; } log("Displaying achievements list."); achievementsList.innerHTML = ''; if (Object.keys(ACHIEVEMENTS_DEFINITIONS).length === 0) { achievementsList.innerHTML = '<li class="message">No achievements defined.</li>'; return; } for (const [id, definition] of Object.entries(ACHIEVEMENTS_DEFINITIONS)) { const li = document.createElement('li'); li.classList.add('achievement-item'); const isUnlocked = unlockedAchievements.has(id); if (isUnlocked) { li.classList.add('unlocked'); li.innerHTML = `<strong>✅ ${escapeHtml(definition.name)}</strong><span>${escapeHtml(definition.description)}</span>`; } else { li.classList.add('locked'); li.innerHTML = `<strong>${escapeHtml(definition.name)}</strong><span>${escapeHtml(definition.description)}</span>`; } achievementsList.appendChild(li); } }
+      function displayAchievementNotification(newlyUnlockedIds) { if (!toastContainer) return; newlyUnlockedIds.forEach((id, index) => { const definition = ACHIEVEMENTS_DEFINITIONS[id]; if (!definition) return; const toast = document.createElement('div'); toast.className = 'toast-notification'; toast.textContent = `🏆 Achievement Unlocked: ${definition.name}!`; toastContainer.appendChild(toast); setTimeout(() => { toast.classList.add('show'); }, 100 + index * 300); setTimeout(() => { toast.classList.remove('show'); toast.addEventListener('transitionend', () => toast.remove(), { once: true }); }, 4000 + index * 300); }); }
 
-      function preloadTrophyImage(){
-        trophyImg = new Image();
-        trophyImg.src = "/static/winnertrophy.png";
-        trophyImg.onload = () => {
-            console.log("Trophy image loaded!");
-        };
-        trophyImg.onerror = () => {
-            console.error("Error loading trophy image.");
-        };
-      }
+      // --- Fog of War Functions ---
+      function initializeVisibilityGrid(rows, cols) { log(`Initializing visibility grid (${rows}x${cols})`); visibilityGrid = []; for (let y = 0; y < rows; y++) { visibilityGrid[y] = new Array(cols).fill(FOG_HIDDEN); } }
+      function revealAdjacentWalls(pathX, pathY, rows, cols) { const neighbors = [ [pathX, pathY - 1], [pathX, pathY + 1], [pathX - 1, pathY], [pathX + 1, pathY] ]; for (const [wx, wy] of neighbors) { if (wy >= 0 && wy < rows && wx >= 0 && wx < cols && maze[wy]?.[wx] === 1 && visibilityGrid[wy]?.[wx] !== FOG_VISIBLE) { visibilityGrid[wy][wx] = FOG_VISIBLE; } } }
+      function updateVisibility(playerX, playerY) { if (!visibilityGrid || visibilityGrid.length === 0 || !maze || maze.length === 0) { logError("Cannot update visibility: Grid/maze missing."); return; } const rows = visibilityGrid.length; const cols = visibilityGrid[0].length; for (let y = 0; y < rows; y++) { for (let x = 0; x < cols; x++) { if (visibilityGrid[y][x] === FOG_VISIBLE) { visibilityGrid[y][x] = FOG_VISITED; } } } const queue = []; const visitedInBFS = new Set(); const startKey = `${playerX},${playerY}`; if (playerY >= 0 && playerY < rows && playerX >= 0 && playerX < cols) { visibilityGrid[playerY][playerX] = FOG_VISIBLE; queue.push([playerX, playerY, 0]); visitedInBFS.add(startKey); revealAdjacentWalls(playerX, playerY, rows, cols); } else { logError(`Player pos (${playerX},${playerY}) out of bounds for visibility.`); return; } let head = 0; while (head < queue.length) { const [cx, cy, depth] = queue[head++]; if (depth >= VISIBILITY_DEPTH) continue; const neighbors = [ [cx, cy - 1], [cx, cy + 1], [cx - 1, cy], [cx + 1, cy] ]; for (const [nx, ny] of neighbors) { const neighborKey = `${nx},${ny}`; if (ny >= 0 && ny < rows && nx >= 0 && nx < cols && !visitedInBFS.has(neighborKey)) { visitedInBFS.add(neighborKey); if (maze[ny]?.[nx] === 0) { visibilityGrid[ny][nx] = FOG_VISIBLE; queue.push([nx, ny, depth + 1]); revealAdjacentWalls(nx, ny, rows, cols); } else if (maze[ny]?.[nx] === 1) { visibilityGrid[ny][nx] = FOG_VISIBLE; } } } } }
 
-      // Initialize things that need the DOM to be ready
-      document.addEventListener('DOMContentLoaded', (event) => {
-          preloadTrophyImage();
-          setupAudio(); // Prepare the audio object
-
-          // Initial maze load
-          loadMaze(parseInt(mazeSizeSelect.value || '5'));
-
-          // Add listener for the mute button
-          if (muteBtn) {
-              muteBtn.addEventListener('click', toggleMute);
-          }
-      });
-
-
-      const canvas = document.getElementById("gameCanvas");
-      const ctx = canvas.getContext("2d");
-      const newMazeBtn = document.getElementById("generate-maze-btn");
-      const solveMazeBtn = document.getElementById("solve-maze-btn");
-      const mazeSizeSelect = document.getElementById("mazeSizeSelect");
-      const statusMessage = document.getElementById("statusMessage");
-      const controlsDiv = document.querySelector('.controls');
-      const titleH2 = document.querySelector('h2');
-
-      let tileSize = 10;
-      let maze = [];
-      let player = { x: 1, y: 1 };
-      let goal = { x: 1, y: 1 }; // Set dynamically
-      let solutionPath = []; // Stores the path to solve the maze
-
+      // --- Maze Drawing and Game Logic ---
+      // --- MODIFY drawMaze ---
       function drawMaze() {
-          if (!maze || maze.length === 0 || !maze[0]) return;
-
-          const vh = window.innerHeight;
-          const vw = window.innerWidth;
-          const controlsHeight = controlsDiv.offsetHeight || 60;
-          const titleHeight = titleH2.offsetHeight || 40;
-          const verticalPadding = 60;
-          const horizontalPadding = 40;
-
-          const availableHeight = vh - controlsHeight - titleHeight - verticalPadding;
-          const availableWidth = Math.min(vw - horizontalPadding, 1400 - horizontalPadding);
-
-          const tileWidthBased = Math.floor(availableWidth / maze[0].length);
-          const tileHeightBased = Math.floor(availableHeight / maze.length);
-          tileSize = Math.max(1, Math.min(tileWidthBased, tileHeightBased));
-
-          canvas.width = tileSize * maze[0].length;
-          canvas.height = tileSize * maze.length;
+          if (!maze || maze.length === 0 || !ctx) { logError("Cannot draw: Missing maze or context."); return; }
+          const rows = maze.length; const cols = maze[0].length;
+          // Size calculation...
+          const vh=window.innerHeight, vw=window.innerWidth; const tH=titleH2?.offsetHeight??40; const iH=instructionsP?.offsetHeight??25; const sH=statusMessage?.offsetHeight??25; const timeH=timerDisplay?.parentElement?.offsetHeight??25; const ctrlH=controlsDiv?.offsetHeight??60; const leadH=leaderboardContainer?.offsetHeight??0; const filtH=leaderboardFilterSelect?.parentElement?.offsetHeight??0; const achH=achievementsContainer?.offsetHeight??0; const vertPad=40; const usedH=tH+iH+sH+timeH+ctrlH+filtH+leadH+vertPad; const horzPad=40; const availH=Math.max(100,vh-usedH); const availW=Math.max(100,Math.min(vw,1400)-horzPad); const tileWB=Math.floor(availW/cols); const tileHB=Math.floor(availH/rows); tileSize=Math.max(1,Math.min(tileWB,tileHB));
+          canvas.width = tileSize * cols; canvas.height = tileSize * rows;
 
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          for (let row = 0; row < maze.length; row++) {
-              for (let col = 0; col < maze[row].length; col++) {
-                  const drawX = col * tileSize;
-                  const drawY = row * tileSize;
+          if (isFogOfWarEnabled) {
+              // --- FOG OF WAR IS ON ---
+              if (!visibilityGrid || visibilityGrid.length !== rows || visibilityGrid[0]?.length !== cols) { logError("Cannot draw Fog: Visibility grid invalid."); ctx.fillStyle='magenta'; ctx.fillRect(0,0,canvas.width, canvas.height); return; }
+              for (let row = 0; row < rows; row++) { for (let col = 0; col < cols; col++) { const visibilityState = visibilityGrid[row][col]; const drawX = col * tileSize; const drawY = row * tileSize; if (visibilityState === FOG_HIDDEN) { ctx.fillStyle = HIDDEN_COLOR; if (tileSize > 0) ctx.fillRect(drawX, drawY, tileSize, tileSize); continue; } let baseColor="white"; if(maze[row][col] === 1) baseColor="black"; else if(row===goal.y && col===goal.x) baseColor="green"; ctx.fillStyle=baseColor; if(tileSize>0)ctx.fillRect(drawX,drawY,tileSize,tileSize); const isSolutionPath = solutionPath?.some(([sy,sx])=>sy===row&&sx===col); if(isSolutionPath&&tileSize>0){ if(!((row===player.y&&col===player.x)||(row===goal.y&&col===goal.x))){ctx.fillStyle=(visibilityState===FOG_VISIBLE)?"rgba(0,0,255,0.5)":"rgba(0,0,150,0.4)"; ctx.fillRect(drawX,drawY,tileSize,tileSize);}} if(visibilityState===FOG_VISITED){ctx.fillStyle=VISITED_OVERLAY_COLOR; if(tileSize>0)ctx.fillRect(drawX,drawY,tileSize,tileSize);} } }
+              // Draw Trail (conditional on visibility)
+              if (tileSize > 0 && playerTrailHistory.length > 0) { for(let i=0; i<playerTrailHistory.length; i++){ const pos=playerTrailHistory[i]; if(visibilityGrid[pos.y]?.[pos.x]===FOG_VISIBLE){ const ageRatio=(MAX_TRAIL_LENGTH>1)?Math.min(i/(MAX_TRAIL_LENGTH-1),1):1; let alpha=TRAIL_MAX_ALPHA-(TRAIL_MAX_ALPHA-TRAIL_MIN_ALPHA)*ageRatio; alpha=Math.max(TRAIL_MIN_ALPHA,Math.min(TRAIL_MAX_ALPHA,alpha)); ctx.fillStyle=`rgba(${TRAIL_COLOR_RGB},${alpha})`; ctx.fillRect(pos.x*tileSize,pos.y*tileSize,tileSize,tileSize);}} }
+              // Draw Player (check visibility)
+              if (tileSize > 0 && visibilityGrid[player.y]?.[player.x] === FOG_VISIBLE) { ctx.fillStyle = "red"; ctx.fillRect(player.x * tileSize, player.y * tileSize, tileSize, tileSize); } else if (tileSize>0) { logError("Player not visible!"); }
+              // Draw Trophy (check visibility)
+              if (gameWon && statusMessage?.textContent.includes("🎉")) { if (visibilityGrid[goal.y]?.[goal.x] !== FOG_HIDDEN) { if (trophyImg?.complete && tileSize > 0) ctx.drawImage(trophyImg, goal.x * tileSize, goal.y * tileSize, tileSize, tileSize); else if (trophyImg && !trophyImg.complete) setTimeout(drawMaze, 100); } }
 
-                  if (maze[row][col] === 1) {
-                      ctx.fillStyle = "black"; // Walls
-                  } else if (row === goal.y && col === goal.x) {
-                      ctx.fillStyle = "green"; // Goal
-                  } else {
-                      ctx.fillStyle = "white"; // Open path
-                  }
-                  ctx.fillRect(drawX, drawY, tileSize, tileSize);
+          } else {
+              // --- FOG OF WAR IS OFF ---
+              // Draw maze background
+              for (let row = 0; row < rows; row++) { for (let col = 0; col < cols; col++) { const drawX = col * tileSize; const drawY = row * tileSize; if (maze[row]?.[col] === 1) ctx.fillStyle = "black"; else if (row === goal.y && col === goal.x) ctx.fillStyle = "green"; else ctx.fillStyle = "white"; if (tileSize > 0) ctx.fillRect(drawX, drawY, tileSize, tileSize); } }
+              // Draw solution path
+              if (solutionPath?.length > 0 && tileSize > 0) { ctx.fillStyle = "rgba(0, 0, 255, 0.5)"; solutionPath.forEach(([y, x]) => { if (!((y === player.y && x === player.x) || (y === goal.y && x === goal.x))) ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize); }); }
+              // Draw Player Trail
+              if (tileSize > 0 && playerTrailHistory.length > 0) { const trailLength = playerTrailHistory.length; for (let i = 0; i < trailLength; i++) { const pos = playerTrailHistory[i]; const ageRatio = (MAX_TRAIL_LENGTH > 1) ? Math.min(i / (MAX_TRAIL_LENGTH -1), 1) : 1; let alpha = TRAIL_MAX_ALPHA - (TRAIL_MAX_ALPHA - TRAIL_MIN_ALPHA) * ageRatio; alpha = Math.max(TRAIL_MIN_ALPHA, Math.min(TRAIL_MAX_ALPHA, alpha)); ctx.fillStyle = `rgba(${TRAIL_COLOR_RGB}, ${alpha})`; ctx.fillRect(pos.x * tileSize, pos.y * tileSize, tileSize, tileSize); } }
+              // Draw Player Head
+              if (tileSize > 0) { ctx.fillStyle = "red"; ctx.fillRect(player.x * tileSize, player.y * tileSize, tileSize, tileSize); }
+              // Draw trophy if won
+              if (gameWon && statusMessage?.textContent.includes("🎉")) { if (trophyImg?.complete && tileSize > 0) ctx.drawImage(trophyImg, goal.x * tileSize, goal.y * tileSize, tileSize, tileSize); else if (trophyImg && !trophyImg.complete) setTimeout(drawMaze, 100); }
+          } // End if/else (isFogOfWarEnabled)
+      }
+      // --- END MODIFICATION ---
+
+      async function loadMaze(dimension) { /* ... loadMaze initializes visibilityGrid and calls updateVisibility ... */
+          dimension=parseInt(dimension); if(isNaN(dimension)){logError("Invalid dim, default 5."); dimension=5;} log(`Loading maze: ${dimension}`); if(statusMessage)statusMessage.textContent="Loading Maze...";
+          currentMazeDimension=dimension; log(`Current Dim: ${currentMazeDimension}`); gameWon=false; resetTimer(); solutionPath=[]; playerTrailHistory=[]; if(instructionsP)instructionsP.style.display="block"; tryStartMusic();
+          try{ const response=await fetch(`/api/generate_maze/${currentMazeDimension}`);log(`Gen status: ${response.status}`); if(!response.ok)throw new Error(`Net error: ${response.status}`); const data=await response.json(); if(!Array.isArray(data)||data.length===0||!Array.isArray(data[0]))throw new Error("Invalid maze data"); maze=data; initializeVisibilityGrid(maze.length, maze[0].length); player=findStartPosition(); goal=findGoalPosition(); log("Maze processed."); updateVisibility(player.x, player.y); if(statusMessage)statusMessage.textContent=""; drawMaze(); log("New maze drawn.");
+          } catch(error){ logError("Load maze error:",error); if(statusMessage)statusMessage.textContent=`Error: ${error.message}`; maze=[]; visibilityGrid = []; if(ctx)ctx.clearRect(0,0,canvas?.width??0,canvas?.height??0); }
+      }
+      // --- MODIFY movePlayer ---
+      function movePlayer(dx, dy) {
+          if (gameWon) return; let nX = player.x + dx, nY = player.y + dy;
+          if (nY>=0 && nY<maze.length && nX>=0 && nX<maze[0].length && maze[nY][nX]===0) {
+              playerTrailHistory.unshift({ x: player.x, y: player.y }); if (playerTrailHistory.length > MAX_TRAIL_LENGTH) playerTrailHistory.pop();
+              startTimer(); player.x = nX; player.y = nY; // Update player pos
+
+              // --- Conditionally update visibility ---
+              if (isFogOfWarEnabled) {
+                  updateVisibility(player.x, player.y);
+              }
+              // ---
+
+              drawMaze(); // Redraw always needed
+
+              if (player.x === goal.x && player.y === goal.y) { // Win condition
+                  log("Goal reached!"); gameWon = true; stopTimer(); if (statusMessage) statusMessage.textContent = "🎉 You reached the exit! Well done! 🎉"; if (instructionsP) instructionsP.style.display = 'none';
+                  const completionData = { dimension: currentMazeDimension, time: elapsedSeconds }; const newlyUnlockedIds = checkAchievementsOnCompletion(completionData); if (newlyUnlockedIds.length > 0) { displayAchievementNotification(newlyUnlockedIds); if (achievementsContainer?.style.display !== 'none') displayAchievements(); }
+                  if (backgroundMusic && !backgroundMusic.paused) backgroundMusic.pause(); playSound("{{ url_for('static', filename='snake_sound.m4a') }}");
+                  setTimeout(() => { const timeFmt = formatTime(elapsedSeconds); const pName = prompt(`Finished in ${timeFmt}!\nEnter name for leaderboard:`, ""); if (pName !== null) submitScore(pName, elapsedSeconds); else { log("Cancelled prompt."); fetchLeaderboard(); } }, 150);
               }
           }
+      }
+      // --- END MODIFICATION ---
 
-          // Draw solution path if it exists
-          ctx.fillStyle = "blue"; // Color for solution path
-          solutionPath.forEach(([y, x]) => { // Assuming path is [y, x] from backend
-              ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+      async function solveMaze() { /* ... solveMaze implementation ... */ if(!maze||maze.length===0||gameWon)return; log("Attempting solve..."); tryStartMusic(); if(statusMessage)statusMessage.textContent="Solving..."; solutionPath=[]; drawMaze(); try{const response=await fetch('/api/solve_maze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({maze:maze,start:player,goal:goal})}); log(`Solve status: ${response.status}`); if(!response.ok){const errData=await response.json().catch(()=>null);const errMsg=errData?.error||`Server error ${response.status}`; throw new Error(errMsg);} const result=await response.json(); if(result.path?.length>0){solutionPath=result.path; if(statusMessage)statusMessage.textContent="✅ Solution Path Shown!"; log("Solution received.");}else{if(statusMessage)statusMessage.textContent="❌ No solution found."; log("No solution."); solutionPath=[];} } catch(error){logError("Solve API Error:",error); if(statusMessage)statusMessage.textContent=`Error solving: ${error.message}`; solutionPath=[];} finally{drawMaze();} }
+
+      // --- Initialization and Event Listeners ---
+      // --- MODIFY initializeGame ---
+      function initializeGame() {
+          log("Initializing game...");
+          canvas = document.getElementById("gameCanvas"); ctx = canvas?.getContext("2d"); newMazeBtn = document.getElementById("generate-maze-btn"); solveMazeBtn = document.getElementById("solve-maze-btn"); mazeSizeSelect = document.getElementById("mazeSizeSelect"); statusMessage = document.getElementById("statusMessage"); controlsDiv = document.querySelector('.controls'); titleH2 = document.querySelector('h2'); instructionsP = document.getElementById("instructions"); timerDisplay = document.getElementById("timerDisplay"); leaderboardList = document.getElementById("leaderboardList"); leaderboardContainer = document.getElementById("leaderboardContainer"); muteBtn = document.getElementById('mute-btn'); leaderboardFilterSelect = document.getElementById('leaderboardFilterSelect'); toggleAchievementsBtn = document.getElementById('toggleAchievementsBtn'); achievementsContainer = document.getElementById('achievementsContainer'); achievementsList = document.getElementById('achievementsList'); toastContainer = document.getElementById('toast-container');
+          toggleFogBtn = document.getElementById('toggleFogBtn'); // Get Fog button
+
+          if (!ctx || !newMazeBtn || !leaderboardFilterSelect || !toggleAchievementsBtn || !achievementsContainer || !achievementsList || !toastContainer || !toggleFogBtn /* Check new element */ ) { logError("Init failed: Critical elements missing!"); if(statusMessage) statusMessage.textContent = "Page Init Error!"; return; }
+
+          preloadTrophyImage(); setupAudio();
+          currentMazeDimension = parseInt(mazeSizeSelect.value || '5'); log(`Initial dimension: ${currentMazeDimension}`);
+          loadMaze(currentMazeDimension); fetchLeaderboard();
+          displayAchievements(); // Initial achievement render
+
+          // Attach event listeners
+          newMazeBtn.addEventListener("click", () => loadMaze(parseInt(mazeSizeSelect.value)));
+          solveMazeBtn.addEventListener("click", solveMaze);
+          if (muteBtn) muteBtn.addEventListener('click', toggleMute);
+          leaderboardFilterSelect.addEventListener('change', filterAndDisplayLeaderboard);
+          toggleAchievementsBtn.addEventListener('click', () => { if (achievementsContainer.style.display === 'none') { achievementsContainer.style.display = 'block'; toggleAchievementsBtn.textContent = 'Hide Achievements'; displayAchievements(); } else { achievementsContainer.style.display = 'none'; toggleAchievementsBtn.textContent = 'View Achievements'; } });
+          document.addEventListener("keydown", handleKeyDown);
+          window.addEventListener('resize', debouncedDrawMaze);
+
+          // Add listener for Fog toggle button
+          toggleFogBtn.addEventListener('click', () => {
+              isFogOfWarEnabled = !isFogOfWarEnabled; // Toggle state
+              log(`Fog of War toggled: ${isFogOfWarEnabled ? 'Enabled' : 'Disabled'}`);
+              toggleFogBtn.textContent = isFogOfWarEnabled ? 'Disable Fog' : 'Enable Fog'; // Update text
+
+              // Re-calculate visibility only if turning ON (it's ignored if off)
+              if (isFogOfWarEnabled) {
+                  updateVisibility(player.x, player.y);
+              }
+              // Trigger immediate redraw with new setting
+              drawMaze();
           });
 
-          ctx.fillStyle = "red";
-          ctx.fillRect(player.x * tileSize, player.y * tileSize, tileSize, tileSize);
-
-          // Check if game is already won to redraw trophy after resize
-          if (statusMessage.textContent.includes("🎉")) {
-                // If the trophy image exists and is loaded, draw it at the goal position
-                if (trophyImg && trophyImg.complete) {
-                    drawTrophy(goal.x, goal.y); // Draw at goal
-                }
-          }
+          log("Game initialized.");
       }
+      // --- END MODIFICATION ---
 
+      const debouncedDrawMaze = debounce(() => { if (maze?.length > 0) { log("Redrawing (resize)."); drawMaze(); } }, 200);
+      function handleKeyDown(event) { if (startTime === null && !gameWon) tryStartMusic(); if (gameWon) { if (['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','e','E'].includes(event.key)) event.preventDefault(); return; } const moves = {"ArrowUp":[0,-1],"w":[0,-1],"W":[0,-1],"ArrowDown":[0,1],"s":[0,1],"S":[0,1],"ArrowLeft":[-1,0],"a":[-1,0],"A":[-1,0],"ArrowRight":[1,0],"d":[1,0],"D":[1,0]}; if (moves[event.key]) { event.preventDefault(); movePlayer(...moves[event.key]); } if (event.key === 'e' || event.key === 'E') { event.preventDefault(); solveMaze(); } }
 
-      function findStartPosition() {
-          for (let y = 0; y < maze.length; y++) {
-              for (let x = 0; x < maze[y].length; x++) {
-                  if (maze[y][x] === 0) { return { x: x, y: y }; }
-              }
-          }
-          return { x: 1, y: 1 }; // Fallback
-      }
-
-      function findGoalPosition() {
-          if (!maze || maze.length === 0 || !maze[0]) return { x: 1, y: 1 };
-          for (let y = maze.length - 1; y >= 0; y--) {
-              for (let x = maze[y].length - 1; x >= 0; x--) {
-                  if (maze[y][x] === 0) { return { x: x, y: y }; }
-              }
-          }
-
-          const lastRow = maze.length -1;
-          const lastCol = maze[0].length -1;
-          // Try bottom-right corner path first
-           if (maze[lastRow] && maze[lastRow][lastCol-1] === 0) return { x: lastCol-1, y: lastRow};
-           if (maze[lastRow-1] && maze[lastRow-1][lastCol] === 0) return { x: lastCol, y: lastRow-1};
-           // Default fallback if corners are blocked
-          return { x: Math.max(1, maze[0].length - 2), y: Math.max(1, maze.length - 2) };
-      }
-
-      function loadMaze(dimension) {
-          statusMessage.textContent = "Loading Maze...";
-
-          // Attempt to start or resume music when a new maze loads
-          tryStartMusic();
-
-
-          fetch(`/api/generate_maze/${dimension}`)
-              .then(response => {
-                  if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
-                  return response.json();
-              })
-              .then(data => {
-                  maze = data;
-                  if (!maze || maze.length === 0 || !maze[0]) {
-                      console.error("Invalid maze data received");
-                      // Provide a simple default maze
-                      maze = [[1,1,1,1,1],[1,0,1,0,1],[1,0,0,0,1],[1,0,1,0,1],[1,1,1,1,1]];
-                   }
-                  player = findStartPosition();
-                  goal = findGoalPosition();
-                  solutionPath = []; // Clear any previous solution
-                  statusMessage.textContent = ""; // Clear loading/previous message
-                  drawMaze();
-
-                  let instructions = document.getElementById("instructions");
-                  if (!instructions) { // Create new instructions if they don't exist
-                      instructions = document.createElement("p");
-                      instructions.id = "instructions";
-                      instructions.className = "instructions";
-                      instructions.textContent = "Use W, A, S and D to move through the maze. Reach the green square to win!";
-
-                      const gameWrapper = document.querySelector(".game-wrapper");
-                       // Insert before the status message for better layout
-                       if (statusMessage) {
-                            gameWrapper.insertBefore(instructions, statusMessage);
-                       } else {
-                            // Fallback if status message isn't found for some reason
-                           gameWrapper.insertBefore(instructions, controlsDiv);
-                       }
-
-                  } else {
-                      instructions.style.display = "block"; // Make sure it's visible if hidden before
-                      instructions.textContent = "Use W, A, S and D to move through the maze. Reach the green square to win!"; // Reset text
-                  }
-              })
-              .catch(error => {
-                  console.error("Error loading maze:", error);
-                  statusMessage.textContent = `Error loading maze: ${error.message}`;
-                  maze = []; // Clear maze on error
-                  ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
-              });
-      }
-
-      function movePlayer(dx, dy) {
-          if (!maze || maze.length === 0 || statusMessage.textContent.includes("🎉")) return;
-
-          let newX = player.x + dx;
-          let newY = player.y + dy;
-
-          // Check bounds and if the target cell is a path (0)
-          if (newY >= 0 && newY < maze.length &&
-              newX >= 0 && newX < maze[0].length &&
-              maze[newY][newX] === 0)
-          {
-              player.x = newX;
-              player.y = newY;
-              drawMaze(); // Redraw the maze with the new player position
-
-              if (player.x === goal.x && player.y === goal.y) {
-                  statusMessage.textContent = "🎉You reached the exit! Well done!🎉 ";
-                  drawTrophy(player.x, player.y); // Displays trophy after winning.
-                  removeInstructions(); // Removes instructions once player wins.
-
-                   if (backgroundMusic && !backgroundMusic.paused) {
-                       backgroundMusic.pause();
-                       console.log("Background music paused on win.");
-                   }
-
-
-                  try {
-                      // Play win sound
-                      const winSound = new Audio('/static/snake_sound.m4a');
-                      winSound.play().catch(error => console.error("Error playing win sound:", error));
-
-                  } catch (e) {
-                      console.error("Could not create audio object for win sound:", e);
-                  }
-              }
-          }
-      }
-
-      function drawTrophy(x, y) {
-        if (trophyImg && trophyImg.complete){
-            // Ensure tileSize is valid before drawing
-            if (tileSize > 0) {
-                ctx.drawImage(trophyImg, x * tileSize, y * tileSize, tileSize, tileSize);
-            } else {
-                console.warn("Skipping trophy draw due to zero tile size.");
-            }
-        }
-        else if (!trophyImg.complete) {
-             console.warn("Trophy image not fully loaded yet, attempting redraw soon.");
-             setTimeout(drawMaze, 100);
-        }
-        else{
-            console.error("Trophy image not loaded or failed to load.");
-        }
-      }
-
-      function removeInstructions(){
-        const instructions = document.getElementById("instructions");
-        if (instructions){
-            // Instead of removing, hide it, so it can be reshown on new game
-            instructions.style.display = "none";
-        }
-      }
-
-      async function solveMaze() {
-          if (!maze || maze.length === 0) return;
-
-          // Try starting music on interaction (if not already started)
-          tryStartMusic();
-
-          statusMessage.textContent = "Solving...";
-          solutionPath = []; // Clear previous solution path visually immediately
-
-          try {
-              const response = await fetch('/api/solve_maze', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ maze: maze, start: player, goal: goal })
-              });
-
-              if (!response.ok) {
-                  // Try to parse error message from server, otherwise use status text
-                  const errData = await response.json().catch(() => null);
-                  const errMsg = errData?.error || response.statusText || `Server error ${response.status}`;
-                  throw new Error(errMsg);
-              }
-
-              const result = await response.json();
-
-              if (result.path && result.path.length > 0) {
-                  // Backend should return list of [y, x] pairs for the path
-                  solutionPath = result.path;
-                  statusMessage.textContent = "✅ Solution found!";
-              } else {
-                  statusMessage.textContent = "❌ No solution found or path is empty.";
-                   solutionPath = []; // Ensure path is empty if API returns empty/null path
-              }
-          } catch (error) {
-              console.error("Solve API Error:", error);
-              statusMessage.textContent = `Error solving: ${error.message}`;
-               solutionPath = []; // Clear path on error
-          } finally {
-               drawMaze(); // Redraw maze to show the solution path or clear it
-          }
-      }
-
-      document.addEventListener("keydown", function (event) {
-          // Try starting music on first key press (if not already started and game not won)
-          if (!statusMessage.textContent.includes("🎉")) {
-               tryStartMusic();
-          }
-
-          if (statusMessage.textContent.includes("🎉")) return; // Don't move if won
-
-          const moves = {
-            "ArrowUp": [0, -1], "w": [0, -1], "W": [0, -1],
-            "ArrowDown": [0, 1], "s": [0, 1], "S": [0, 1],
-            "ArrowLeft": [-1, 0], "a": [-1, 0], "A": [-1, 0],
-            "ArrowRight": [1, 0], "d": [1, 0], "D": [1, 0]
-          };
-
-          if (moves[event.key]) {
-              event.preventDefault(); // Prevent default browser action (e.g., scrolling)
-              movePlayer(...moves[event.key]); // Call movePlayer with dx, dy
-          }
-           if (event.key === 'e' || event.key === 'E') { // Solve maze trigger
-               event.preventDefault();
-               solveMaze();
-           }
-      });
-
-      newMazeBtn.addEventListener("click", function () {
-          loadMaze(parseInt(mazeSizeSelect.value)); // Load maze with selected dimension
-      });
-
-      solveMazeBtn.addEventListener("click", solveMaze); // Attach solver to button click
-
-      function debounce(func, wait) {
-          let timeout;
-          return function executedFunction(...args) {
-              const later = () => {
-                  clearTimeout(timeout);
-                  func(...args);
-              };
-              clearTimeout(timeout);
-              timeout = setTimeout(later, wait);
-          };
-      };
-
-      // Debounced resize handler
-      const debouncedDrawMaze = debounce(() => {
-          if (maze && maze.length > 0) {
-             console.log("Redrawing maze due to resize...");
-             drawMaze();
-          }
-      }, 150); // Adjust wait time (ms) as needed
-
-      window.addEventListener('resize', debouncedDrawMaze);
-
+      document.addEventListener('DOMContentLoaded', initializeGame);
   </script>
 {% endblock %}
