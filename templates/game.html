@@ -23,12 +23,8 @@
         </select>
         <button id="solve-maze-btn" class="maze-btn">Solve Maze</button>
         <button id="mute-btn" class="maze-btn">🔇 Mute</button>
-        <!-- ADD FOG TOGGLE BUTTON -->
-        <button id="toggleFogBtn" class="maze-btn">Disable Fog</button>
-        <!-- END FOG TOGGLE BUTTON -->
     </div>
 
-    <!-- LEADERBOARD FILTER CONTROLS -->
     <div class="leaderboard-filter-container">
          <label for="leaderboardFilterSelect">Filter Size:</label>
          <select id="leaderboardFilterSelect">
@@ -100,7 +96,6 @@
       #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column-reverse; align-items: flex-end; }
       .toast-notification { background-color: rgba(0, 0, 0, 0.8); color: #FFD700; padding: 12px 20px; border-radius: 5px; margin-top: 10px; font-size: 0.9rem; border: 1px solid #FFD700; box-shadow: 0 2px 10px rgba(0,0,0,0.5); opacity: 0; transform: translateX(100%); transition: opacity 0.5s ease, transform 0.5s ease; }
       .toast-notification.show { opacity: 1; transform: translateX(0); }
-      /* No additional CSS needed for toggleFogBtn unless desired */
   </style>
 
   <script>
@@ -114,17 +109,9 @@
       let currentMazeDimension = 5; let allLeaderboardScores = [];
       let unlockedAchievements = new Set();
       let achievementState = { mazeCompletions: 0 };
-      const FOG_HIDDEN = 0; const FOG_VISITED = 1; const FOG_VISIBLE = 2;
-      const VISIBILITY_DEPTH = 3; const VISITED_OVERLAY_COLOR = "rgba(80, 80, 80, 0.6)";
-      const HIDDEN_COLOR = "black";
-      let visibilityGrid = [];
-
-      // --- ADD FOG OF WAR STATE ---
-      let isFogOfWarEnabled = true; // Fog is ON by default
-      // --- END FOG OF WAR STATE ---
 
       // --- Achievement Definitions ---
-      const ACHIEVEMENTS_DEFINITIONS = { /* ... */
+      const ACHIEVEMENTS_DEFINITIONS = {
           'first_steps': { name: 'First Steps', description: 'Complete your first maze.', check: (e, s) => s.mazeCompletions >= 1 },
           'medium_well_done': { name: 'Medium Well Done', description: 'Complete a Medium (5x5) maze.', check: (e, s) => e.dimension === 5 },
           'maze_master': { name: 'Maze Master', description: 'Complete a 7x7 or larger maze.', check: (e, s) => e.dimension >= 7 },
@@ -133,7 +120,7 @@
       };
 
       // --- DOM Element References ---
-      let canvas, ctx, newMazeBtn, solveMazeBtn, mazeSizeSelect, statusMessage, controlsDiv, titleH2, instructionsP, timerDisplay, leaderboardList, leaderboardContainer, muteBtn, leaderboardFilterSelect, toggleAchievementsBtn, achievementsContainer, achievementsList, toastContainer, toggleFogBtn; // Added toggleFogBtn
+      let canvas, ctx, newMazeBtn, solveMazeBtn, mazeSizeSelect, statusMessage, controlsDiv, titleH2, instructionsP, timerDisplay, leaderboardList, leaderboardContainer, muteBtn, leaderboardFilterSelect, toggleAchievementsBtn, achievementsContainer, achievementsList, toastContainer;
 
       // --- Utility & Core Functions ---
       function log(...args) { console.log("MAZE_DEBUG:", ...args); }
@@ -164,15 +151,17 @@
       function displayAchievements() { if (!achievementsList) { logError("Achievements list element missing!"); return; } log("Displaying achievements list."); achievementsList.innerHTML = ''; if (Object.keys(ACHIEVEMENTS_DEFINITIONS).length === 0) { achievementsList.innerHTML = '<li class="message">No achievements defined.</li>'; return; } for (const [id, definition] of Object.entries(ACHIEVEMENTS_DEFINITIONS)) { const li = document.createElement('li'); li.classList.add('achievement-item'); const isUnlocked = unlockedAchievements.has(id); if (isUnlocked) { li.classList.add('unlocked'); li.innerHTML = `<strong>✅ ${escapeHtml(definition.name)}</strong><span>${escapeHtml(definition.description)}</span>`; } else { li.classList.add('locked'); li.innerHTML = `<strong>${escapeHtml(definition.name)}</strong><span>${escapeHtml(definition.description)}</span>`; } achievementsList.appendChild(li); } }
       function displayAchievementNotification(newlyUnlockedIds) { if (!toastContainer) return; newlyUnlockedIds.forEach((id, index) => { const definition = ACHIEVEMENTS_DEFINITIONS[id]; if (!definition) return; const toast = document.createElement('div'); toast.className = 'toast-notification'; toast.textContent = `🏆 Achievement Unlocked: ${definition.name}!`; toastContainer.appendChild(toast); setTimeout(() => { toast.classList.add('show'); }, 100 + index * 300); setTimeout(() => { toast.classList.remove('show'); toast.addEventListener('transitionend', () => toast.remove(), { once: true }); }, 4000 + index * 300); }); }
 
-      // --- Fog of War Functions ---
-      function initializeVisibilityGrid(rows, cols) { log(`Initializing visibility grid (${rows}x${cols})`); visibilityGrid = []; for (let y = 0; y < rows; y++) { visibilityGrid[y] = new Array(cols).fill(FOG_HIDDEN); } }
-      function revealAdjacentWalls(pathX, pathY, rows, cols) { const neighbors = [ [pathX, pathY - 1], [pathX, pathY + 1], [pathX - 1, pathY], [pathX + 1, pathY] ]; for (const [wx, wy] of neighbors) { if (wy >= 0 && wy < rows && wx >= 0 && wx < cols && maze[wy]?.[wx] === 1 && visibilityGrid[wy]?.[wx] !== FOG_VISIBLE) { visibilityGrid[wy][wx] = FOG_VISIBLE; } } }
-      function updateVisibility(playerX, playerY) { if (!visibilityGrid || visibilityGrid.length === 0 || !maze || maze.length === 0) { logError("Cannot update visibility: Grid/maze missing."); return; } const rows = visibilityGrid.length; const cols = visibilityGrid[0].length; for (let y = 0; y < rows; y++) { for (let x = 0; x < cols; x++) { if (visibilityGrid[y][x] === FOG_VISIBLE) { visibilityGrid[y][x] = FOG_VISITED; } } } const queue = []; const visitedInBFS = new Set(); const startKey = `${playerX},${playerY}`; if (playerY >= 0 && playerY < rows && playerX >= 0 && playerX < cols) { visibilityGrid[playerY][playerX] = FOG_VISIBLE; queue.push([playerX, playerY, 0]); visitedInBFS.add(startKey); revealAdjacentWalls(playerX, playerY, rows, cols); } else { logError(`Player pos (${playerX},${playerY}) out of bounds for visibility.`); return; } let head = 0; while (head < queue.length) { const [cx, cy, depth] = queue[head++]; if (depth >= VISIBILITY_DEPTH) continue; const neighbors = [ [cx, cy - 1], [cx, cy + 1], [cx - 1, cy], [cx + 1, cy] ]; for (const [nx, ny] of neighbors) { const neighborKey = `${nx},${ny}`; if (ny >= 0 && ny < rows && nx >= 0 && nx < cols && !visitedInBFS.has(neighborKey)) { visitedInBFS.add(neighborKey); if (maze[ny]?.[nx] === 0) { visibilityGrid[ny][nx] = FOG_VISIBLE; queue.push([nx, ny, depth + 1]); revealAdjacentWalls(nx, ny, rows, cols); } else if (maze[ny]?.[nx] === 1) { visibilityGrid[ny][nx] = FOG_VISIBLE; } } } } }
-
       // --- Maze Drawing and Game Logic ---
-      // --- MODIFY drawMaze ---
       function drawMaze() {
           if (!maze || maze.length === 0 || !ctx) { logError("Cannot draw: Missing maze or context."); return; }
+          
+          if (maze && maze.length > 0) {
+              log(`DRAWMAZE ENTRY -> Player (col,row): (${player.x}, ${player.y}), Goal (col,row): (${goal.x}, ${goal.y})`);
+              if (solutionPath && solutionPath.length > 0) {
+                  log(`DRAWMAZE ENTRY -> SolutionPath first 3 elements (expected [col, row]): ${JSON.stringify(solutionPath.slice(0,3))}`);
+              }
+          }
+
           const rows = maze.length; const cols = maze[0].length;
           // Size calculation...
           const vh=window.innerHeight, vw=window.innerWidth; const tH=titleH2?.offsetHeight??40; const iH=instructionsP?.offsetHeight??25; const sH=statusMessage?.offsetHeight??25; const timeH=timerDisplay?.parentElement?.offsetHeight??25; const ctrlH=controlsDiv?.offsetHeight??60; const leadH=leaderboardContainer?.offsetHeight??0; const filtH=leaderboardFilterSelect?.parentElement?.offsetHeight??0; const achH=achievementsContainer?.offsetHeight??0; const vertPad=40; const usedH=tH+iH+sH+timeH+ctrlH+filtH+leadH+vertPad; const horzPad=40; const availH=Math.max(100,vh-usedH); const availW=Math.max(100,Math.min(vw,1400)-horzPad); const tileWB=Math.floor(availW/cols); const tileHB=Math.floor(availH/rows); tileSize=Math.max(1,Math.min(tileWB,tileHB));
@@ -180,78 +169,163 @@
 
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          if (isFogOfWarEnabled) {
-              // --- FOG OF WAR IS ON ---
-              if (!visibilityGrid || visibilityGrid.length !== rows || visibilityGrid[0]?.length !== cols) { logError("Cannot draw Fog: Visibility grid invalid."); ctx.fillStyle='magenta'; ctx.fillRect(0,0,canvas.width, canvas.height); return; }
-              for (let row = 0; row < rows; row++) { for (let col = 0; col < cols; col++) { const visibilityState = visibilityGrid[row][col]; const drawX = col * tileSize; const drawY = row * tileSize; if (visibilityState === FOG_HIDDEN) { ctx.fillStyle = HIDDEN_COLOR; if (tileSize > 0) ctx.fillRect(drawX, drawY, tileSize, tileSize); continue; } let baseColor="white"; if(maze[row][col] === 1) baseColor="black"; else if(row===goal.y && col===goal.x) baseColor="green"; ctx.fillStyle=baseColor; if(tileSize>0)ctx.fillRect(drawX,drawY,tileSize,tileSize); const isSolutionPath = solutionPath?.some(([sy,sx])=>sy===row&&sx===col); if(isSolutionPath&&tileSize>0){ if(!((row===player.y&&col===player.x)||(row===goal.y&&col===goal.x))){ctx.fillStyle=(visibilityState===FOG_VISIBLE)?"rgba(0,0,255,0.5)":"rgba(0,0,150,0.4)"; ctx.fillRect(drawX,drawY,tileSize,tileSize);}} if(visibilityState===FOG_VISITED){ctx.fillStyle=VISITED_OVERLAY_COLOR; if(tileSize>0)ctx.fillRect(drawX,drawY,tileSize,tileSize);} } }
-              // Draw Trail (conditional on visibility)
-              if (tileSize > 0 && playerTrailHistory.length > 0) { for(let i=0; i<playerTrailHistory.length; i++){ const pos=playerTrailHistory[i]; if(visibilityGrid[pos.y]?.[pos.x]===FOG_VISIBLE){ const ageRatio=(MAX_TRAIL_LENGTH>1)?Math.min(i/(MAX_TRAIL_LENGTH-1),1):1; let alpha=TRAIL_MAX_ALPHA-(TRAIL_MAX_ALPHA-TRAIL_MIN_ALPHA)*ageRatio; alpha=Math.max(TRAIL_MIN_ALPHA,Math.min(TRAIL_MAX_ALPHA,alpha)); ctx.fillStyle=`rgba(${TRAIL_COLOR_RGB},${alpha})`; ctx.fillRect(pos.x*tileSize,pos.y*tileSize,tileSize,tileSize);}} }
-              // Draw Player (check visibility)
-              if (tileSize > 0 && visibilityGrid[player.y]?.[player.x] === FOG_VISIBLE) { ctx.fillStyle = "red"; ctx.fillRect(player.x * tileSize, player.y * tileSize, tileSize, tileSize); } else if (tileSize>0) { logError("Player not visible!"); }
-              // Draw Trophy (check visibility)
-              if (gameWon && statusMessage?.textContent.includes("🎉")) { if (visibilityGrid[goal.y]?.[goal.x] !== FOG_HIDDEN) { if (trophyImg?.complete && tileSize > 0) ctx.drawImage(trophyImg, goal.x * tileSize, goal.y * tileSize, tileSize, tileSize); else if (trophyImg && !trophyImg.complete) setTimeout(drawMaze, 100); } }
-
-          } else {
-              // --- FOG OF WAR IS OFF ---
-              // Draw maze background
-              for (let row = 0; row < rows; row++) { for (let col = 0; col < cols; col++) { const drawX = col * tileSize; const drawY = row * tileSize; if (maze[row]?.[col] === 1) ctx.fillStyle = "black"; else if (row === goal.y && col === goal.x) ctx.fillStyle = "green"; else ctx.fillStyle = "white"; if (tileSize > 0) ctx.fillRect(drawX, drawY, tileSize, tileSize); } }
-              // Draw solution path
-              if (solutionPath?.length > 0 && tileSize > 0) { ctx.fillStyle = "rgba(0, 0, 255, 0.5)"; solutionPath.forEach(([y, x]) => { if (!((y === player.y && x === player.x) || (y === goal.y && x === goal.x))) ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize); }); }
-              // Draw Player Trail
-              if (tileSize > 0 && playerTrailHistory.length > 0) { const trailLength = playerTrailHistory.length; for (let i = 0; i < trailLength; i++) { const pos = playerTrailHistory[i]; const ageRatio = (MAX_TRAIL_LENGTH > 1) ? Math.min(i / (MAX_TRAIL_LENGTH -1), 1) : 1; let alpha = TRAIL_MAX_ALPHA - (TRAIL_MAX_ALPHA - TRAIL_MIN_ALPHA) * ageRatio; alpha = Math.max(TRAIL_MIN_ALPHA, Math.min(TRAIL_MAX_ALPHA, alpha)); ctx.fillStyle = `rgba(${TRAIL_COLOR_RGB}, ${alpha})`; ctx.fillRect(pos.x * tileSize, pos.y * tileSize, tileSize, tileSize); } }
-              // Draw Player Head
-              if (tileSize > 0) { ctx.fillStyle = "red"; ctx.fillRect(player.x * tileSize, player.y * tileSize, tileSize, tileSize); }
-              // Draw trophy if won
-              if (gameWon && statusMessage?.textContent.includes("🎉")) { if (trophyImg?.complete && tileSize > 0) ctx.drawImage(trophyImg, goal.x * tileSize, goal.y * tileSize, tileSize, tileSize); else if (trophyImg && !trophyImg.complete) setTimeout(drawMaze, 100); }
-          } // End if/else (isFogOfWarEnabled)
+          // Draw maze background
+          for (let row = 0; row < rows; row++) { 
+              for (let col = 0; col < cols; col++) { 
+                  const drawX = col * tileSize; 
+                  const drawY = row * tileSize; 
+                  if (maze[row]?.[col] === 1) ctx.fillStyle = "black"; 
+                  else if (row === goal.y && col === goal.x) ctx.fillStyle = "green"; 
+                  else ctx.fillStyle = "white"; 
+                  if (tileSize > 0) ctx.fillRect(drawX, drawY, tileSize, tileSize); 
+              } 
+          }
+          
+          // Draw solution path (with fix for mirrored path)
+          if (solutionPath?.length > 0 && tileSize > 0) { 
+              ctx.fillStyle = "rgba(0, 0, 255, 0.5)"; 
+              solutionPath.forEach(([path_col, path_row]) => { // path_col is X-like, path_row is Y-like
+                  if (!((path_row === player.y && path_col === player.x) || (path_row === goal.y && path_col === goal.x))) 
+                      ctx.fillRect(path_col * tileSize, path_row * tileSize, tileSize, tileSize); 
+              });
+          }
+          // Draw Player Trail
+          if (tileSize > 0 && playerTrailHistory.length > 0) { 
+              const trailLength = playerTrailHistory.length; 
+              for (let i = 0; i < trailLength; i++) { 
+                  const pos = playerTrailHistory[i]; // {x: col, y: row}
+                  const ageRatio = (MAX_TRAIL_LENGTH > 1) ? Math.min(i / (MAX_TRAIL_LENGTH -1), 1) : 1; 
+                  let alpha = TRAIL_MAX_ALPHA - (TRAIL_MAX_ALPHA - TRAIL_MIN_ALPHA) * ageRatio; 
+                  alpha = Math.max(TRAIL_MIN_ALPHA, Math.min(TRAIL_MAX_ALPHA, alpha)); 
+                  ctx.fillStyle = `rgba(${TRAIL_COLOR_RGB}, ${alpha})`; 
+                  ctx.fillRect(pos.x * tileSize, pos.y * tileSize, tileSize, tileSize); 
+              } 
+          }
+          // Draw Player Head
+          if (tileSize > 0) { 
+              ctx.fillStyle = "red"; 
+              ctx.fillRect(player.x * tileSize, player.y * tileSize, tileSize, tileSize); // player.x is col, player.y is row
+          }
+          // Draw trophy if won
+          if (gameWon && statusMessage?.textContent.includes("🎉")) { 
+              if (trophyImg?.complete && tileSize > 0) 
+                  ctx.drawImage(trophyImg, goal.x * tileSize, goal.y * tileSize, tileSize, tileSize); // goal.x is col, goal.y is row
+              else if (trophyImg && !trophyImg.complete) 
+                  setTimeout(drawMaze, 100); 
+          }
+          // --- END SIMPLIFIED DRAWING ---
       }
-      // --- END MODIFICATION ---
 
-      async function loadMaze(dimension) { /* ... loadMaze initializes visibilityGrid and calls updateVisibility ... */
-          dimension=parseInt(dimension); if(isNaN(dimension)){logError("Invalid dim, default 5."); dimension=5;} log(`Loading maze: ${dimension}`); if(statusMessage)statusMessage.textContent="Loading Maze...";
-          currentMazeDimension=dimension; log(`Current Dim: ${currentMazeDimension}`); gameWon=false; resetTimer(); solutionPath=[]; playerTrailHistory=[]; if(instructionsP)instructionsP.style.display="block"; tryStartMusic();
-          try{ const response=await fetch(`/api/generate_maze/${currentMazeDimension}`);log(`Gen status: ${response.status}`); if(!response.ok)throw new Error(`Net error: ${response.status}`); const data=await response.json(); if(!Array.isArray(data)||data.length===0||!Array.isArray(data[0]))throw new Error("Invalid maze data"); maze=data; initializeVisibilityGrid(maze.length, maze[0].length); player=findStartPosition(); goal=findGoalPosition(); log("Maze processed."); updateVisibility(player.x, player.y); if(statusMessage)statusMessage.textContent=""; drawMaze(); log("New maze drawn.");
-          } catch(error){ logError("Load maze error:",error); if(statusMessage)statusMessage.textContent=`Error: ${error.message}`; maze=[]; visibilityGrid = []; if(ctx)ctx.clearRect(0,0,canvas?.width??0,canvas?.height??0); }
+      async function loadMaze(dimension) {
+          dimension=parseInt(dimension); if(isNaN(dimension)){logError("Invalid dim, default 5."); dimension=5;} 
+          log(`Loading maze: ${dimension}`); 
+          if(statusMessage)statusMessage.textContent="Loading Maze...";
+          currentMazeDimension=dimension; 
+          log(`Current Dim: ${currentMazeDimension}`); 
+          gameWon=false; 
+          resetTimer(); 
+          solutionPath=[]; 
+          playerTrailHistory=[]; 
+          if(instructionsP)instructionsP.style.display="block"; 
+          tryStartMusic(); 
+          try{ 
+              const response=await fetch(`/api/generate_maze/${currentMazeDimension}`);
+              log(`Gen status: ${response.status}`); 
+              if(!response.ok)throw new Error(`Net error: ${response.status}`); 
+              const data=await response.json(); 
+              if(!Array.isArray(data)||data.length===0||!Array.isArray(data[0]))throw new Error("Invalid maze data"); 
+              maze=data; 
+              player=findStartPosition(); 
+              goal=findGoalPosition(); 
+              log("Maze processed."); 
+              if(statusMessage)statusMessage.textContent=""; 
+              drawMaze(); 
+              log("New maze drawn.");
+          } catch(error){ 
+              logError("Load maze error:",error); 
+              if(statusMessage)statusMessage.textContent=`Error: ${error.message}`; 
+              maze=[]; 
+              if(ctx)ctx.clearRect(0,0,canvas?.width??0,canvas?.height??0); 
+          }
       }
-      // --- MODIFY movePlayer ---
+
       function movePlayer(dx, dy) {
-          if (gameWon) return; let nX = player.x + dx, nY = player.y + dy;
+          if (gameWon) return; 
+          let nX = player.x + dx, nY = player.y + dy;
           if (nY>=0 && nY<maze.length && nX>=0 && nX<maze[0].length && maze[nY][nX]===0) {
-              playerTrailHistory.unshift({ x: player.x, y: player.y }); if (playerTrailHistory.length > MAX_TRAIL_LENGTH) playerTrailHistory.pop();
-              startTimer(); player.x = nX; player.y = nY; // Update player pos
+              playerTrailHistory.unshift({ x: player.x, y: player.y }); 
+              if (playerTrailHistory.length > MAX_TRAIL_LENGTH) playerTrailHistory.pop();
+              startTimer(); 
+              player.x = nX; // player.x is col
+              player.y = nY; // player.y is row
 
-              // --- Conditionally update visibility ---
-              if (isFogOfWarEnabled) {
-                  updateVisibility(player.x, player.y);
-              }
-              // ---
-
-              drawMaze(); // Redraw always needed
+              drawMaze();
 
               if (player.x === goal.x && player.y === goal.y) { // Win condition
-                  log("Goal reached!"); gameWon = true; stopTimer(); if (statusMessage) statusMessage.textContent = "🎉 You reached the exit! Well done! 🎉"; if (instructionsP) instructionsP.style.display = 'none';
-                  const completionData = { dimension: currentMazeDimension, time: elapsedSeconds }; const newlyUnlockedIds = checkAchievementsOnCompletion(completionData); if (newlyUnlockedIds.length > 0) { displayAchievementNotification(newlyUnlockedIds); if (achievementsContainer?.style.display !== 'none') displayAchievements(); }
-                  if (backgroundMusic && !backgroundMusic.paused) backgroundMusic.pause(); playSound("{{ url_for('static', filename='snake_sound.m4a') }}");
-                  setTimeout(() => { const timeFmt = formatTime(elapsedSeconds); const pName = prompt(`Finished in ${timeFmt}!\nEnter name for leaderboard:`, ""); if (pName !== null) submitScore(pName, elapsedSeconds); else { log("Cancelled prompt."); fetchLeaderboard(); } }, 150);
+                  log("Goal reached!"); 
+                  gameWon = true; 
+                  stopTimer(); 
+                  if (statusMessage) statusMessage.textContent = "🎉 You reached the exit! Well done! 🎉"; 
+                  if (instructionsP) instructionsP.style.display = 'none';
+                  const completionData = { dimension: currentMazeDimension, time: elapsedSeconds }; 
+                  const newlyUnlockedIds = checkAchievementsOnCompletion(completionData); 
+                  if (newlyUnlockedIds.length > 0) { 
+                      displayAchievementNotification(newlyUnlockedIds); 
+                      if (achievementsContainer?.style.display !== 'none') displayAchievements(); 
+                  }
+                  if (backgroundMusic && !backgroundMusic.paused) backgroundMusic.pause(); 
+                  playSound("{{ url_for('static', filename='snake_sound.m4a') }}");
+                  setTimeout(() => { 
+                      const timeFmt = formatTime(elapsedSeconds); 
+                      const pName = prompt(`Finished in ${timeFmt}!\nEnter name for leaderboard:`, ""); 
+                      if (pName !== null) submitScore(pName, elapsedSeconds); 
+                      else { log("Cancelled prompt."); fetchLeaderboard(); } 
+                  }, 150);
               }
           }
       }
-      // --- END MODIFICATION ---
 
-      async function solveMaze() { /* ... solveMaze implementation ... */ if(!maze||maze.length===0||gameWon)return; log("Attempting solve..."); tryStartMusic(); if(statusMessage)statusMessage.textContent="Solving..."; solutionPath=[]; drawMaze(); try{const response=await fetch('/api/solve_maze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({maze:maze,start:player,goal:goal})}); log(`Solve status: ${response.status}`); if(!response.ok){const errData=await response.json().catch(()=>null);const errMsg=errData?.error||`Server error ${response.status}`; throw new Error(errMsg);} const result=await response.json(); if(result.path?.length>0){solutionPath=result.path; if(statusMessage)statusMessage.textContent="✅ Solution Path Shown!"; log("Solution received.");}else{if(statusMessage)statusMessage.textContent="❌ No solution found."; log("No solution."); solutionPath=[];} } catch(error){logError("Solve API Error:",error); if(statusMessage)statusMessage.textContent=`Error solving: ${error.message}`; solutionPath=[];} finally{drawMaze();} }
+      async function solveMaze() { 
+          if(!maze||maze.length===0||gameWon)return; 
+          log("Attempting solve..."); 
+          tryStartMusic(); 
+          if(statusMessage)statusMessage.textContent="Solving..."; 
+          solutionPath=[]; 
+          drawMaze(); // Draw without path first
+          try{
+              log(`SOLVEMAZE SENDING -> Start (col,row): {x: ${player.x}, y: ${player.y}}, Goal (col,row): {x: ${goal.x}, y: ${goal.y}}`);
+              const response=await fetch('/api/solve_maze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({maze:maze,start:player,goal:goal})}); 
+              log(`Solve status: ${response.status}`); 
+              if(!response.ok){const errData=await response.json().catch(()=>null);const errMsg=errData?.error||`Server error ${response.status}`; throw new Error(errMsg);} 
+              const result=await response.json(); 
+              if(result.path?.length>0){
+                  solutionPath=result.path; // solutionPath items are [col, row]
+                  log(`SOLVEMAZE RECEIVED -> SolutionPath first 3 (expected [col,row]): ${JSON.stringify(solutionPath.slice(0,3))}`);
+                  if(statusMessage)statusMessage.textContent="✅ Solution Path Shown!"; log("Solution received.");
+              } else {
+                  if(statusMessage)statusMessage.textContent="❌ No solution found."; log("No solution."); solutionPath=[];
+              } 
+          } catch(error){logError("Solve API Error:",error); if(statusMessage)statusMessage.textContent=`Error solving: ${error.message}`; solutionPath=[];} 
+          finally{drawMaze();} // Redraw with path (or lack thereof)
+      }
+
 
       // --- Initialization and Event Listeners ---
-      // --- MODIFY initializeGame ---
       function initializeGame() {
           log("Initializing game...");
           canvas = document.getElementById("gameCanvas"); ctx = canvas?.getContext("2d"); newMazeBtn = document.getElementById("generate-maze-btn"); solveMazeBtn = document.getElementById("solve-maze-btn"); mazeSizeSelect = document.getElementById("mazeSizeSelect"); statusMessage = document.getElementById("statusMessage"); controlsDiv = document.querySelector('.controls'); titleH2 = document.querySelector('h2'); instructionsP = document.getElementById("instructions"); timerDisplay = document.getElementById("timerDisplay"); leaderboardList = document.getElementById("leaderboardList"); leaderboardContainer = document.getElementById("leaderboardContainer"); muteBtn = document.getElementById('mute-btn'); leaderboardFilterSelect = document.getElementById('leaderboardFilterSelect'); toggleAchievementsBtn = document.getElementById('toggleAchievementsBtn'); achievementsContainer = document.getElementById('achievementsContainer'); achievementsList = document.getElementById('achievementsList'); toastContainer = document.getElementById('toast-container');
-          toggleFogBtn = document.getElementById('toggleFogBtn'); // Get Fog button
 
-          if (!ctx || !newMazeBtn || !leaderboardFilterSelect || !toggleAchievementsBtn || !achievementsContainer || !achievementsList || !toastContainer || !toggleFogBtn /* Check new element */ ) { logError("Init failed: Critical elements missing!"); if(statusMessage) statusMessage.textContent = "Page Init Error!"; return; }
+          if (!ctx || !newMazeBtn || !leaderboardFilterSelect || !toggleAchievementsBtn || !achievementsContainer || !achievementsList || !toastContainer ) { 
+              logError("Init failed: Critical elements missing!"); 
+              if(statusMessage) statusMessage.textContent = "Page Init Error!"; 
+              return; 
+          }
 
           preloadTrophyImage(); setupAudio();
-          currentMazeDimension = parseInt(mazeSizeSelect.value || '5'); log(`Initial dimension: ${currentMazeDimension}`);
-          loadMaze(currentMazeDimension); fetchLeaderboard();
+          currentMazeDimension = parseInt(mazeSizeSelect.value || '5'); 
+          log(`Initial dimension: ${currentMazeDimension}`);
+          loadMaze(currentMazeDimension); 
+          fetchLeaderboard();
           displayAchievements(); // Initial achievement render
 
           // Attach event listeners
@@ -263,23 +337,8 @@
           document.addEventListener("keydown", handleKeyDown);
           window.addEventListener('resize', debouncedDrawMaze);
 
-          // Add listener for Fog toggle button
-          toggleFogBtn.addEventListener('click', () => {
-              isFogOfWarEnabled = !isFogOfWarEnabled; // Toggle state
-              log(`Fog of War toggled: ${isFogOfWarEnabled ? 'Enabled' : 'Disabled'}`);
-              toggleFogBtn.textContent = isFogOfWarEnabled ? 'Disable Fog' : 'Enable Fog'; // Update text
-
-              // Re-calculate visibility only if turning ON (it's ignored if off)
-              if (isFogOfWarEnabled) {
-                  updateVisibility(player.x, player.y);
-              }
-              // Trigger immediate redraw with new setting
-              drawMaze();
-          });
-
           log("Game initialized.");
       }
-      // --- END MODIFICATION ---
 
       const debouncedDrawMaze = debounce(() => { if (maze?.length > 0) { log("Redrawing (resize)."); drawMaze(); } }, 200);
       function handleKeyDown(event) { if (startTime === null && !gameWon) tryStartMusic(); if (gameWon) { if (['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','e','E'].includes(event.key)) event.preventDefault(); return; } const moves = {"ArrowUp":[0,-1],"w":[0,-1],"W":[0,-1],"ArrowDown":[0,1],"s":[0,1],"S":[0,1],"ArrowLeft":[-1,0],"a":[-1,0],"A":[-1,0],"ArrowRight":[1,0],"d":[1,0],"D":[1,0]}; if (moves[event.key]) { event.preventDefault(); movePlayer(...moves[event.key]); } if (event.key === 'e' || event.key === 'E') { event.preventDefault(); solveMaze(); } }
