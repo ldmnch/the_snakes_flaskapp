@@ -1,91 +1,162 @@
-body {
-    margin: 0;
-    font-family: 'Poppins', sans-serif;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    background-color: #111;
-    background-image: url("../static/maze_bg.jpg");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-  }
-  
-  /* -------- Landing Page -------- */
-  .hero {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .hero img {
-    width: 500px;
-    height: auto;
-  }
-  
-  .hero h1 {
-    font-size: 3rem;
-    margin-top: 20px;
-  }
-  
-  .hero .tagline {
-    font-size: 1.2rem;
-    margin-top: 10px;
-  }
-  
-  .start-btn {
-    display: inline-block;
-    padding: 1rem 3rem;
-    margin-top: 2rem;
-    background-color: #fff;
-    color: #111;
-    text-decoration: none;
-    font-weight: bold;
-    border-radius: 50px;
-    transition: all 0.3s ease;
-  }
-  
-  .start-btn:hover {
-    background-color: #ccc;
-  }
-  
-  /* -------- Maze Game Page -------- */
-  .game-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin-top: 0.5rem;
-  }
-  
-  #maze-container {
-    margin: 1rem 0;
-    border: 2px solid white;
-    display: inline-block;
-  }
+/* static/style.css */
 
-  .maze-btn {
-    padding: 0.6rem 1.2rem;
-    font-weight: 600;
-    border-radius: 1rem;
-    border: none;
-    background-color: white;
-    color: black;
-    cursor: pointer;
-    margin: 0.5rem;
-    font-family: 'Poppins', sans-serif;
-  }
-  
-  .maze-btn:hover {
-    background-color: #eee;
-  }
-  
-  .emoji {
-    font-size: 2rem;
-    margin-right: 0.3rem;
-  }
-  
+/* --- Global Styles --- */
+/* ... (keep as is) ... */
+html { box-sizing: border-box; height: 100%; }
+*, *:before, *:after { box-sizing: inherit; }
+body { margin: 0; padding: 0; font-family: 'Poppins', sans-serif; color: white; background-color: #111; background-image: url("maze_bg.jpg"); background-size: cover; background-position: center; background-repeat: no-repeat; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+
+/* -------- Landing Page Styles -------- */
+/* ... (keep as is) ... */
+.hero { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; flex-grow: 1; width: 100%; padding: 20px; }
+.hero img { width: 100%; max-width: 500px; height: auto; }
+.hero h1 { font-size: 3rem; margin-top: 20px; margin-bottom: 10px; }
+.hero .tagline { font-size: 1.2rem; margin-top: 10px; margin-bottom: 30px; }
+.start-btn { display: inline-block; padding: 1rem 3rem; margin-top: 2rem; background-color: #fff; color: #111; text-decoration: none; font-weight: bold; border-radius: 50px; transition: all 0.3s ease; }
+.start-btn:hover { background-color: #ccc; }
+
+/* -------- Maze Game Page Styles -------- */
+
+/* --- Define Grid Variables --- */
+:root {
+  --sidebar-width: 310px; 
+  --column-gap: 0.75rem;
+  --row-gap: 0.25rem; 
+}
+
+/* --- Grid Container --- */
+.game-wrapper.grid-container {
+    display: grid; width: 100%; max-width: 98vw; height: 100vh;       
+    padding: 0.4rem; box-sizing: border-box;
+    grid-template-columns: 1fr var(--sidebar-width); 
+    grid-template-rows: auto 1fr auto; 
+    grid-template-areas:
+        "header   sidebar"
+        "maze     sidebar"
+        "controls sidebar";
+    gap: var(--row-gap) var(--column-gap); 
+}
+
+/* --- Grid Area Assignments --- */
+.grid-header { grid-area: header; text-align: center; padding-bottom: 3px; margin: 0; }
+.grid-maze-display { grid-area: maze; display: flex; align-items: center; justify-content: center; min-height: 0; overflow: hidden; padding: 0; box-sizing: border-box; }
+.grid-controls { grid-area: controls; display: flex; flex-direction: column; align-items: center; padding-top: 4px; }
+.ancillary-content-area { grid-area: sidebar; width: var(--sidebar-width); flex-shrink: 0; height: 100%; overflow-y: auto; padding: 0.4rem; background-color: rgba(0, 0, 0, 0.6); border-radius: 6px; box-sizing: border-box; display: flex; flex-direction: column; gap: 0.6rem; }
+
+/* --- Main Content Column Width --- */
+.main-content-column { display: flex; flex-direction: column; width: calc(100% - var(--sidebar-width) - var(--column-gap)); min-width: 0; height: 100%; overflow: hidden; padding: 0; }
+
+/* Top text elements styling */
+.grid-header h2 { font-size: 1.3rem; margin: 0; line-height: 1.2; padding-bottom: 1px;}
+.grid-header #instructions,
+.grid-header #statusMessage,
+.grid-header p.top-status { font-size: 0.8rem; margin: 1px 0 0 0; min-height: 14px; line-height: 1.3; }
+#statusMessage { font-weight: bold; color: lightgreen; } 
+p.top-status { padding-top: 2px; } 
+.emoji { font-size: 1.4rem; margin-right: 0.1rem; vertical-align: -2px; }
+#timerDisplay { font-weight: bold; color: #FFD700; margin-left: 4px; min-width: 45px; display: inline-block; font-size: 0.9rem; }
+
+/* Canvas Container Styling */
+#canvas-container { background-color: transparent; border: none; width: auto; height: auto; max-width: 100%; max-height: 100%; aspect-ratio: 1 / 1; display: flex; justify-content: center; align-items: center; margin: auto; padding: 1px; box-sizing: border-box; overflow: hidden; }
+#gameCanvas { display: block; max-width: 100%; max-height: 100%; background-color: white; box-shadow: 0px 3px 12px rgba(0, 0, 0, 0.45); }
+
+/* Control Rows Styling */
+.primary-controls-row, .secondary-controls-row { display: flex; justify-content: center; align-items: center; width: 100%; flex-grow: 0; flex-shrink: 0; margin-top: 4px; padding: 1px 0; }
+.primary-controls-row { margin-top: 6px; } 
+.secondary-controls-row { gap: 6px; }
+
+/* Buttons & Select */
+.maze-btn, #mazeSizeSelect, #snakeColorSelect { padding: 0.45rem 0.9rem; font-size: 0.8rem; font-weight: 500; border-radius: 18px; border: 1px solid #bbb; background-color: white; color: black; cursor: pointer; margin: 0; font-family: 'Poppins', sans-serif; vertical-align: middle; transition: background-color 0.2s ease, transform 0.1s ease; line-height: 1.2; height: 32px; box-sizing: border-box;}
+#mazeSizeSelect, #snakeColorSelect { -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23000000%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto; padding-right: 2.5em; }
+.maze-btn:hover, #mazeSizeSelect:hover, #snakeColorSelect:hover { background-color: #f0f0f0; }
+.maze-btn:active { transform: scale(0.96); }
+.btn-primary { background-color: #6ab04c; color: white; border-color: #5a9a3d; padding: 0.55rem 1.3rem; font-size: 0.9rem; height: 34px; }
+.btn-primary:hover { background-color: #5a9a3d; }
+
+/* Ancillary content area internal styling */
+.leaderboard-filter-container { margin-bottom: 0; text-align: center; color: #ccc; flex-shrink: 0; padding: 0.2rem 0;}
+.leaderboard-filter-container label { margin-right: 5px; font-size: 0.8rem; }
+#leaderboardFilterSelect { padding: 0.2rem 0.4rem; font-size: 0.75rem; border-radius: 0.3rem; border: 1px solid #aaa; background-color: #444; color: white; font-family: 'Poppins', sans-serif; cursor: pointer; min-width: 110px; }
+#leaderboardFilterSelect:hover { border-color: white; }
+#leaderboardContainer, #achievementsContainer { margin: 0; width: 100%; background-color: rgba(25, 25, 25, 0.7); border: 1px solid #555; border-radius: 5px; padding: 0.6rem 0.8rem; color: white; box-sizing: border-box; display: flex; flex-direction: column; flex-shrink: 0; min-height: 100px; }
+#leaderboardContainer h2, #achievementsContainer h2 { text-align: center; margin: 0 0 0.6rem 0; font-size: 1.1rem; flex-shrink: 0; }
+#leaderboardContainer h2 { color: #FFD700;}
+#achievementsContainer h2 { color: #ccc;}
+#leaderboardList, #achievementsList { list-style-type: none; padding-left: 0; margin: 0; flex-grow: 1; overflow-y: auto; min-height: 60px; color: #eee; }
+#leaderboardList li, #achievementsList li.achievement-item { margin-bottom: 4px; font-size: 0.85rem; padding: 3px 5px; line-height: 1.35; }
+#achievementsList li.achievement-item { background-color: rgba(255, 255, 255, 0.05); border-radius: 3px; border-left: 4px solid #666; }
+#leaderboardList li:empty, #leaderboardList li.message, #achievementsList li.message { text-align: center; font-style: italic; color: #aaa; padding: 5px 0; background-color: transparent; border: none; }
+#achievementsList li.locked { opacity: 0.65; }
+#achievementsList li.unlocked { border-left-color: #FFD700; opacity: 1.0; }
+#achievementsList li strong { color: #e8e8e8; display: block; margin-bottom: 2px; font-size: 0.95rem; }
+#achievementsList li span { font-size: 0.8rem; color: #ccc; line-height: 1.3; }
+
+
+/* === UPDATED Pop-up Styles for Top-Right Notification === */
+.popup-overlay {
+    position: fixed;
+    inset: 0; 
+    background-color: rgba(0, 0, 0, 0.6); 
+    z-index: 1000; 
+    opacity: 0; 
+    visibility: hidden; 
+    transition: opacity 0.3s ease, visibility 0s linear 0.3s; 
+    pointer-events: none; 
+    /* REMOVED display: flex/block from base style */
+    display: none; /* Start fully hidden */
+}
+.popup-overlay.visible { 
+     opacity: 1;
+     visibility: visible;
+     transition: opacity 0.3s ease, visibility 0s linear 0s;
+     pointer-events: auto; 
+     display: block; /* Make overlay visible, allows absolute child */
+}
+
+.popup-content {
+    position: absolute;
+    top: 1.5rem; /* Slightly more space from top */
+    right: 1.5rem; /* Slightly more space from right */
+    
+    background-color: #222; /* Slightly lighter dark */
+    color: #eee; 
+    padding: 1rem 1.5rem; 
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5); /* Enhanced shadow */
+    text-align: left; 
+    max-width: 340px; 
+    width: auto; 
+
+    /* --- Transition for slide/fade --- */
+    transform: translateX(calc(100% + 2rem)); /* Start off-screen */
+    opacity: 0; 
+    /* visibility: hidden; /* Not needed if parent controls visibility */
+    transition: opacity 0.35s ease-out, transform 0.35s ease-out; /* Removed visibility transition */
+    pointer-events: auto; 
+}
+
+.popup-overlay.visible .popup-content { /* Animate in when overlay is visible */
+    transform: translateX(0); 
+    opacity: 1;
+    /* visibility: visible; /* Not needed */
+    transition: opacity 0.35s ease-out, transform 0.35s ease-out; /* Removed visibility transition */
+}
+
+
+.popup-content h3 { margin-top: 0; margin-bottom: 0.8rem; color: #6ab04c; font-size: 1.3rem; text-align: center; } 
+.popup-content p { margin: 5px 0; font-size: 0.9rem; line-height: 1.4; } 
+.popup-content small { display: block; margin-top: 1rem; font-size: 0.75rem; color: #aaa; text-align: center; }
+
+.popup-close {
+    position: absolute; top: 6px; right: 10px; 
+    background: none; border: none; font-size: 1.8rem; font-weight: bold;
+    color: #888; cursor: pointer; line-height: 1; padding: 0;
+    transition: color 0.2s ease;
+}
+.popup-close:hover { color: #eee; }
+
+
+/* Toast Notifications */
+#toast-container { position: fixed; bottom: 10px; right: 10px; z-index: 1001; display: flex; flex-direction: column-reverse; align-items: flex-end; }
+.toast-notification { background-color: rgba(0, 0, 0, 0.85); color: #FFD700; padding: 8px 15px; border-radius: 4px; margin-top: 6px; font-size: 0.8rem; border: 1px solid #FFD700; box-shadow: 0 2px 8px rgba(0,0,0,0.5); opacity: 0; transform: translateX(100%); transition: opacity 0.5s ease, transform 0.5s ease; }
+.toast-notification.show { opacity: 1; transform: translateX(0); }

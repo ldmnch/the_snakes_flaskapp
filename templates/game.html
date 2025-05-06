@@ -1,102 +1,101 @@
 {% extends "base.html" %}
 
+{% block page_specific_css %}
+{% endblock %}
+
 {% block content %}
-  <div class="game-wrapper">
-    <h2><span class="emoji">🐍</span> Maze Challenge</h2>
-    <p id="instructions" class="instructions">Use W, A, S and D to move through the maze. Reach the green square to win!</p>
-    <p id="statusMessage" class="top-status"></p>
-    <p class="top-status">Time: <span id="timerDisplay">00:00</span></p>
+  {# Applied grid-container class for the CSS Grid layout #}
+  <div class="game-wrapper grid-container">
 
-    <div id="canvas-container">
-        <canvas id="gameCanvas"></canvas>
-    </div>
-    <div class="controls">
-        <button id="generate-maze-btn" class="maze-btn">Generate New Maze</button>
-        <select id="mazeSizeSelect">
-            <option value="3">Small (3x3)</option>
-            <option value="5" selected>Medium (5x5)</option>
-            <option value="7">Large (7x7)</option>
-            <option value="10">Extra Large (10x10)</option>
-            <option value="15">Very Large (15x15)</option>
-            <option value="20">XXL (20x20)</option>
-            <option value="100">HUGE!!!! (100x100)</option>
-        </select>
-        <button id="solve-maze-btn" class="maze-btn">Solve Maze</button>
-        <button id="mute-btn" class="maze-btn">🔇 Mute</button>
+    <!-- Grid Area: header -->
+    <div class="grid-header">
+        <h2><span class="emoji">🐍</span> Maze Challenge</h2>
+        <p id="instructions" class="instructions">Use W, A, S and D to move through the maze. Reach the green square to win!</p>
+        <p id="statusMessage" class="top-status"></p>
+        <p class="top-status">Time: <span id="timerDisplay">00:00</span></p>
+        {# Rank message removed, handled by popup #}
     </div>
 
-    <div class="leaderboard-filter-container">
-         <label for="leaderboardFilterSelect">Filter Size:</label>
-         <select id="leaderboardFilterSelect">
-             <option value="all" selected>All Sizes</option>
-             <option value="3">Small (3x3)</option>
-             <option value="5">Medium (5x5)</option>
-             <option value="7">Large (7x7)</option>
-             <option value="10">XL (10x10)</option>
-             <option value="15">VL (15x15)</option>
-             <option value="20">XXL (20x20)</option>
-             <option value="100">HUGE (100x100)</option>
-         </select>
+    <!-- Grid Area: maze -->
+    <div class="grid-maze-display">
+        <div id="canvas-container">
+            <canvas id="gameCanvas"></canvas>
+        </div>
     </div>
 
-    <div id="leaderboardContainer">
-        <h2>🏆 Leaderboard 🏆</h2>
-        <ol id="leaderboardList">
-            <li class="message">Initializing...</li>
-        </ol>
+    <!-- Grid Area: controls -->
+    <div class="grid-controls">
+        <div id="primary-controls" class="primary-controls-row">
+            <button id="generate-maze-btn" class="maze-btn btn-primary">Generate New Maze</button>
+        </div>
+        <div id="secondary-controls" class="secondary-controls-row">
+            <select id="mazeSizeSelect">
+                <option value="3">Small (3x3)</option>
+                <option value="5" selected>Medium (5x5)</option>
+                <option value="7">Large (7x7)</option>
+                <option value="10">Extra Large (10x10)</option>
+                <option value="15">Very Large (15x15)</option>
+                <option value="20">XXL (20x20)</option>
+                <option value="100">HUGE!!!! (100x100)</option>
+            </select>
+             {# ADDED Snake Color Select #}
+            <select id="snakeColorSelect">
+                <option value="red" selected>Red Snake</option>
+                <option value="blue">Blue Snake</option>
+                <option value="lime">Green Snake</option>
+                <option value="purple">Purple Snake</option>
+                <option value="orange">Orange Snake</option>
+                <option value="#00FFFF">Cyan Snake</option> {# Example using hex #}
+                <option value="yellow">Yellow Snake</option>
+            </select>
+            <button id="solve-maze-btn" class="maze-btn">Solve Maze</button>
+            <button id="mute-btn" class="maze-btn">🔇 Mute</button>
+        </div>
     </div>
 
-    <!-- ACHIEVEMENTS SECTION -->
-    <button id="toggleAchievementsBtn" class="maze-btn" style="margin-top: 15px;">View Achievements</button>
-    <div id="achievementsContainer" style="display: none;">
-        <h2>Achievements</h2>
-        <ul id="achievementsList">
-            <li class="message">Loading achievements...</li>
-        </ul>
+    <!-- Grid Area: sidebar -->
+    <div class="ancillary-content-area">
+        <div class="leaderboard-filter-container">
+             <label for="leaderboardFilterSelect">Filter Size:</label>
+             <select id="leaderboardFilterSelect">
+                 <option value="all" selected>All Sizes</option>
+                 <option value="3">Small (3x3)</option>
+                 <option value="5">Medium (5x5)</option>
+                 <option value="7">Large (7x7)</option>
+                 <option value="10">XL (10x10)</option>
+                 <option value="15">VL (15x15)</option>
+                 <option value="20">XXL (20x20)</option>
+                 <option value="100">HUGE (100x100)</option>
+             </select>
+        </div>
+        <div id="leaderboardContainer">
+            <h2>🏆 Leaderboard 🏆</h2>
+            <ol id="leaderboardList">
+                <li class="message">Initializing...</li>
+            </ol>
+        </div>
+        <div id="achievementsContainer">
+            <h2>Achievements</h2>
+            <ul id="achievementsList">
+                <li class="message">Loading achievements...</li>
+            </ul>
+        </div>
     </div>
 
-    <!-- TOAST NOTIFICATION CONTAINER -->
+     {# Pop-up Structure #}
+    <div id="winPopupOverlay" class="popup-overlay">
+        <div class="popup-content">
+            <button id="closePopupBtn" class="popup-close" aria-label="Close popup">×</button>
+            <h3>🎉 Maze Completed! 🎉</h3>
+            <p id="popupTime">Your Time: --:--</p>
+            <p id="popupRankOverall">Overall Rank: N/A</p>
+            <p id="popupRankSize">Rank for Size: N/A</p>
+            <small>(Click outside or '×' to close)</small>
+        </div>
+    </div>
+
     <div id="toast-container"></div>
-
   </div>
-
-  <style>
-      /* --- Paste ALL styles from previous version --- */
-      body { text-align: center; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; font-family: 'Poppins', sans-serif; color: white; background-color: #111; background-image: url("{{ url_for('static', filename='maze_bg.jpg') }}"); background-size: cover; background-position: center; background-repeat: no-repeat; }
-      .game-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; margin-top: 1rem; width: 100%; max-width: 1400px; padding: 0 1rem; box-sizing: border-box; }
-      h2 { color: white; margin-bottom: 0.5rem; }
-      .emoji { font-size: 2rem; margin-right: 0.3rem; }
-      .top-status, #instructions { font-size: 16px; font-weight: normal; margin-top: 5px; margin-bottom: 5px; color: white; min-height: 24px; text-align: center; }
-      #statusMessage { font-weight: bold; color: lightgreen; }
-      #canvas-container { line-height: 0; width: 100%; display: flex; justify-content: center; align-items: center; margin-top: 10px; margin-bottom: 10px; }
-      #gameCanvas { display: block; max-width: 95vw; max-height: 70vh; border: 2px solid white; background-color: white; }
-      .controls { margin-top: 15px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; width: 100%; }
-      .maze-btn, #mazeSizeSelect { padding: 0.6rem 1.2rem; font-size: 0.9rem; font-weight: 600; border-radius: 1rem; border: none; background-color: white; color: black; cursor: pointer; margin: 0; font-family: 'Poppins', sans-serif; vertical-align: middle; }
-      .maze-btn:hover, #mazeSizeSelect:hover { background-color: #eee; }
-      #timerDisplay { font-weight: bold; color: #FFD700; margin-left: 5px; min-width: 50px; display: inline-block; }
-      .leaderboard-filter-container { margin-top: 20px; margin-bottom: 5px; text-align: center; color: #ccc; }
-      .leaderboard-filter-container label { margin-right: 8px; font-size: 0.9rem; }
-      #leaderboardFilterSelect { padding: 0.3rem 0.6rem; border-radius: 0.5rem; border: 1px solid #ccc; background-color: #333; color: white; font-family: 'Poppins', sans-serif; cursor: pointer; min-width: 150px; }
-      #leaderboardFilterSelect:hover { border-color: white; }
-      #leaderboardContainer { margin-top: 5px; margin-bottom: 10px; width: 90%; max-width: 450px; background-color: rgba(0, 0, 0, 0.4); border: 1px solid #ccc; border-radius: 8px; padding: 15px 20px; color: white; text-align: left; box-sizing: border-box; }
-      #leaderboardContainer h2 { text-align: center; margin-top: 0; margin-bottom: 15px; color: #FFD700; font-size: 1.4rem; }
-      #leaderboardList { list-style-type: decimal; padding-left: 25px; margin: 0; max-height: 200px; overflow-y: auto; color: #eee; }
-      #leaderboardList li { margin-bottom: 6px; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 5px; }
-      #leaderboardList li:empty, #leaderboardList li.message { list-style-type: none; text-align: center; font-style: italic; color: #bbb; padding-left: 0; }
-      #toggleAchievementsBtn { margin-top: 15px; }
-      #achievementsContainer { display: none; margin-top: 15px; margin-bottom: 20px; width: 90%; max-width: 500px; background-color: rgba(0, 0, 0, 0.5); border: 1px solid #aaa; border-radius: 8px; padding: 15px 20px; color: white; box-sizing: border-box; }
-      #achievementsContainer h2 { text-align: center; margin-top: 0; margin-bottom: 15px; color: #aaa; font-size: 1.4rem; }
-      #achievementsList { list-style-type: none; padding: 0; margin: 0; max-height: 250px; overflow-y: auto; }
-      #achievementsList li.achievement-item { background-color: rgba(255, 255, 255, 0.05); margin-bottom: 8px; padding: 10px 15px; border-radius: 4px; border-left: 5px solid #555; transition: all 0.3s ease; }
-      #achievementsList li.locked { opacity: 0.6; }
-      #achievementsList li.unlocked { border-left-color: #FFD700; opacity: 1.0; }
-      #achievementsList li strong { color: #eee; display: block; margin-bottom: 3px; font-size: 1.05rem; }
-      #achievementsList li span { font-size: 0.85rem; color: #ccc; }
-      #achievementsList li.message { text-align: center; font-style: italic; color: #bbb; background-color: transparent; border: none; opacity: 1; }
-      #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column-reverse; align-items: flex-end; }
-      .toast-notification { background-color: rgba(0, 0, 0, 0.8); color: #FFD700; padding: 12px 20px; border-radius: 5px; margin-top: 10px; font-size: 0.9rem; border: 1px solid #FFD700; box-shadow: 0 2px 10px rgba(0,0,0,0.5); opacity: 0; transform: translateX(100%); transition: opacity 0.5s ease, transform 0.5s ease; }
-      .toast-notification.show { opacity: 1; transform: translateX(0); }
-  </style>
 
   <script>
       // --- Global Variables ---
@@ -104,23 +103,35 @@
       let startTime = null; let timerInterval = null; let elapsedSeconds = 0; let gameWon = false;
       let tileSize = 10; let maze = []; let player = { x: 1, y: 1 }; let goal = { x: 1, y: 1 };
       let solutionPath = []; let playerTrailHistory = [];
-      const MAX_TRAIL_LENGTH = 8; const TRAIL_COLOR_RGB = "255, 0, 0";
+      const MAX_TRAIL_LENGTH = 16;
       const TRAIL_MAX_ALPHA = 0.6; const TRAIL_MIN_ALPHA = 0.05;
       let currentMazeDimension = 5; let allLeaderboardScores = [];
       let unlockedAchievements = new Set();
       let achievementState = { mazeCompletions: 0 };
+      let playerColor = "red";
+      let playerTrailColorRGB = "255, 0, 0";
+      let popupOverlayEl, popupContentEl, popupTimeEl, popupRankOverallEl, popupRankSizeEl, closePopupBtnEl;
+      let popupDismissTimer = null;
+      let snakeColorSelectEl;
+      let lastSubmittedScoreInfo = null;
 
-      // --- Achievement Definitions ---
+
+      // --- UPDATED Achievement Definitions ---
       const ACHIEVEMENTS_DEFINITIONS = {
           'first_steps': { name: 'First Steps', description: 'Complete your first maze.', check: (e, s) => s.mazeCompletions >= 1 },
           'medium_well_done': { name: 'Medium Well Done', description: 'Complete a Medium (5x5) maze.', check: (e, s) => e.dimension === 5 },
           'maze_master': { name: 'Maze Master', description: 'Complete a 7x7 or larger maze.', check: (e, s) => e.dimension >= 7 },
           'speed_demon': { name: 'Speed Demon', description: 'Complete a 5x5 maze in under 15 seconds.', check: (e, s) => e.dimension === 5 && e.time < 15 },
-          'persistent_explorer': { name: 'Persistent Explorer', description: 'Complete 10 mazes.', check: (e, s) => s.mazeCompletions >= 10 }
+          'persistent_explorer': { name: 'Persistent Explorer', description: 'Complete 10 mazes.', check: (e, s) => s.mazeCompletions >= 10 },
+          'quick_learner': { name: 'Quick Learner', description: 'Complete a Small (3x3) maze in under 5 seconds.', check: (e, s) => e.dimension === 3 && e.time < 5 },
+          'labyrinth_conqueror': { name: 'Labyrinth Conqueror', description: 'Complete an Extra Large (10x10) maze.', check: (e, s) => e.dimension === 10 },
+          'legendary_mapper': { name: 'Legendary Mapper', description: 'Complete the Very Large (20x20) maze!', check: (e, s) => e.dimension === 20 },
       };
 
       // --- DOM Element References ---
-      let canvas, ctx, newMazeBtn, solveMazeBtn, mazeSizeSelect, statusMessage, controlsDiv, titleH2, instructionsP, timerDisplay, leaderboardList, leaderboardContainer, muteBtn, leaderboardFilterSelect, toggleAchievementsBtn, achievementsContainer, achievementsList, toastContainer;
+      let canvas, ctx, newMazeBtn, solveMazeBtn, mazeSizeSelect, statusMessage,
+          titleH2, instructionsP, timerDisplay, leaderboardList, leaderboardContainer, muteBtn, leaderboardFilterSelect,
+          achievementsContainer, achievementsList, toastContainer;
 
       // --- Utility & Core Functions ---
       function log(...args) { console.log("MAZE_DEBUG:", ...args); }
@@ -129,13 +140,13 @@
       function escapeHtml(unsafe) { if (typeof unsafe !== 'string') return ''; return unsafe.replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">"); }
       function setupAudio() { try { backgroundMusic = new Audio("{{ url_for('static', filename='background_music.m4a') }}"); backgroundMusic.loop = true; backgroundMusic.volume = 0.3; log("BG music created."); } catch (e) { logError("Audio object error:", e); } }
       function toggleMute() { if (!backgroundMusic) return; isMuted = !isMuted; backgroundMusic.muted = isMuted; if (muteBtn) muteBtn.textContent = isMuted ? "🔊 Unmute" : "🔇 Mute"; log("Muted:", isMuted); }
-      function tryStartMusic() { if (backgroundMusic && (!musicStarted || backgroundMusic.paused)) { log("Attempting music play..."); backgroundMusic.play().then(() => { log("BG music playing."); musicStarted = true; backgroundMusic.muted = isMuted; }).catch(error => { console.warn("BG music fail:", error.message); if (!musicStarted) musicStarted = false; }); } else if (backgroundMusic && !backgroundMusic.paused) { backgroundMusic.muted = isMuted; } }
+      function tryStartMusic() { if (backgroundMusic && (!musicStarted || backgroundMusic.paused)) { log("Attempting music play..."); backgroundMusic.play().then(() => { log("BG music playing."); musicStarted = true; backgroundMusic.muted = isMuted; }).catch(error => { /* console.warn("BG music fail:", error.message); */ if (!musicStarted) musicStarted = false; }); } else if (backgroundMusic && !backgroundMusic.paused) { backgroundMusic.muted = isMuted; } }
       function playSound(soundFile, volume = 1.0) { try { const sound = new Audio(soundFile); sound.volume = volume; sound.play().catch(error => logError(`Sound error ${soundFile}:`, error)); log(`Playing: ${soundFile}`); } catch(e) { logError(`Sound fail ${soundFile}:`, e); } }
-      function formatTime(totalSeconds) { if (isNaN(totalSeconds) || !isFinite(totalSeconds) || totalSeconds < 0) return "00:00"; const minutes = Math.floor(totalSeconds / 60); const seconds = Math.floor(totalSeconds % 60); return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`; }
-      function updateTimerDisplay() { if (startTime === null || gameWon || !timerDisplay) return; elapsedSeconds = Math.max(0, (Date.now() - startTime) / 1000); timerDisplay.textContent = formatTime(elapsedSeconds); }
-      function startTimer() { if (startTime === null && !gameWon) { log("Starting timer..."); startTime = Date.now(); elapsedSeconds = 0; if (timerDisplay) timerDisplay.textContent = formatTime(0); if (timerInterval) clearInterval(timerInterval); updateTimerDisplay(); timerInterval = setInterval(updateTimerDisplay, 1000); } }
-      function stopTimer() { if (timerInterval !== null) { log("Stopping timer."); clearInterval(timerInterval); timerInterval = null; if (startTime) { elapsedSeconds = Math.max(0, (Date.now() - startTime) / 1000); log(`Final time: ${elapsedSeconds}s`); if (timerDisplay) timerDisplay.textContent = formatTime(elapsedSeconds); } } else if (startTime === null) { elapsedSeconds = 0; if (timerDisplay) timerDisplay.textContent = formatTime(0); } }
-      function resetTimer() { log("Resetting timer."); stopTimer(); startTime = null; elapsedSeconds = 0; if (timerDisplay) timerDisplay.textContent = formatTime(0); }
+      function formatTime(totalSeconds) { if (isNaN(totalSeconds) || !isFinite(totalSeconds) || totalSeconds < 0) return "00:00.000"; const minutes = Math.floor(totalSeconds / 60); const seconds = totalSeconds % 60; return `${String(minutes).padStart(2, '0')}:${seconds.toFixed(3).padStart(6, '0')}`; }
+      function updateTimerDisplay() { if (startTime === null || gameWon || !timerDisplay) return; elapsedSeconds = Math.max(0, (Date.now() - startTime) / 1000); timerDisplay.textContent = formatTime(elapsedSeconds).split('.')[0]; }
+      function startTimer() { if (startTime === null && !gameWon) { log("Starting timer..."); startTime = Date.now(); elapsedSeconds = 0; if (timerDisplay) timerDisplay.textContent = formatTime(0).split('.')[0]; if (timerInterval) clearInterval(timerInterval); updateTimerDisplay(); timerInterval = setInterval(updateTimerDisplay, 50); } }
+      function stopTimer() { if (timerInterval !== null) { log("Stopping timer."); clearInterval(timerInterval); timerInterval = null; if (startTime) { elapsedSeconds = Math.max(0, (Date.now() - startTime) / 1000); log(`Final time: ${elapsedSeconds}s`); if (timerDisplay) timerDisplay.textContent = formatTime(elapsedSeconds).split('.')[0]; } } else if (startTime === null) { elapsedSeconds = 0; if (timerDisplay) timerDisplay.textContent = formatTime(0).split('.')[0]; } }
+      function resetTimer() { log("Resetting timer."); stopTimer(); startTime = null; elapsedSeconds = 0; if (timerDisplay) timerDisplay.textContent = formatTime(0).split('.')[0]; }
       function preloadTrophyImage(){ trophyImg = new Image(); trophyImg.src = "{{ url_for('static', filename='winnertrophy.png') }}"; trophyImg.onload = () => log("Trophy loaded!"); trophyImg.onerror = () => logError("Trophy error."); }
       function findStartPosition() { for (let y=0; y<maze.length; y++) for (let x=0; x<maze[y].length; x++) if (maze[y][x]===0) return {x,y}; logError("No start!"); return {x:1,y:1}; }
       function findGoalPosition() { if (!maze || !maze.length) return {x:1,y:1}; for(let y=maze.length-1; y>=0; y--) for(let x=maze[y].length-1; x>=0; x--) if(maze[y][x]===0) return {x,y}; logError("No goal!"); return {x:Math.max(1,maze[0].length-2),y:Math.max(1,maze.length-2)}; }
@@ -144,203 +155,274 @@
       function displayLeaderboard(scores) { if (!leaderboardList || !leaderboardFilterSelect) { logError("LB list/filter missing!"); return; } const currentFilter = leaderboardFilterSelect.value; log(`Displaying ${scores?scores.length:0} scores for filter '${currentFilter}'.`); leaderboardList.innerHTML = ''; if (!scores || !Array.isArray(scores) || scores.length === 0) { leaderboardList.innerHTML = '<li class="message">No scores for this size!</li>'; return; } scores.forEach(score => { const li = document.createElement('li'); const name = score?.name ? escapeHtml(String(score.name)) : 'Unknown'; const time = (score?.time !== undefined) ? formatTime(Number(score.time)) : '--:--'; const dimension = score?.dimension ?? '?'; if (currentFilter === 'all') { li.textContent = `${name} - ${time} (${dimension}x${dimension})`; } else { li.textContent = `${name} - ${time}`; } leaderboardList.appendChild(li); }); }
       function filterAndDisplayLeaderboard() { if (!leaderboardFilterSelect || !allLeaderboardScores) { logError("Cannot filter LB."); return; } const selectedDim = leaderboardFilterSelect.value; log(`Filtering LB for: ${selectedDim}`); let filteredScores = []; if (selectedDim === 'all') { filteredScores = allLeaderboardScores; } else { filteredScores = allLeaderboardScores.filter(score => score.dimension == selectedDim); } filteredScores.sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity)); displayLeaderboard(filteredScores); }
       async function fetchLeaderboard() { log("Fetching full LB..."); if (!leaderboardList) return; leaderboardList.innerHTML = '<li class="message">Loading...</li>'; try { const response = await fetch('/api/get_leaderboard'); log(`LB fetch status: ${response.status}`); if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`); const scores = await response.json(); if (!Array.isArray(scores)) { logError("LB data not array:", scores); throw new Error("Invalid data format."); } allLeaderboardScores = scores; log(`Stored ${allLeaderboardScores.length} total scores.`); filterAndDisplayLeaderboard(); } catch (error) { logError("Error fetch/process LB:", error); allLeaderboardScores = []; if (leaderboardList) leaderboardList.innerHTML = '<li class="message">Error loading scores.</li>'; } }
-      async function submitScore(name, timeInSeconds) { const trimmedName = name ? name.trim() : ''; log(`Submitting score: N='${trimmedName}', T=${timeInSeconds}s, D=${currentMazeDimension}`); if (!trimmedName) { log("Submit cancelled."); fetchLeaderboard(); return; } if (typeof timeInSeconds !== 'number' || timeInSeconds < 0 || !isFinite(timeInSeconds)) { logError("Invalid time:", timeInSeconds); alert("Timer error."); return; } if (typeof currentMazeDimension !== 'number' || currentMazeDimension <= 0) { logError("Invalid dimension:", currentMazeDimension); alert("Maze dimension error."); return; } try { const scoreData = { name: trimmedName, time: timeInSeconds, dimension: currentMazeDimension }; const response = await fetch('/api/add_score', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(scoreData) }); log(`Add score status: ${response.status}`); if (!response.ok) { let errorMsg = `Error ${response.status}`; try { const errData = await response.json(); errorMsg = errData.error || errorMsg; } catch (e) { log("No error body."); } throw new Error(errorMsg); } log("Score submitted."); if (statusMessage) statusMessage.textContent = "Score saved!"; await fetchLeaderboard(); } catch (error) { logError("Error submitting score:", error); alert(`Failed to save score: ${error.message}`); } }
+
+      // --- submitScore Function ---
+      async function submitScore(name, timeInSeconds, dimension) {
+          const trimmedName = name ? name.trim() : '';
+          log(`Submitting score: N='${trimmedName}', T=${timeInSeconds}s, D=${dimension}`);
+          if (!trimmedName) { log("Submit cancelled (empty name)."); await fetchLeaderboard(); return { rankData: null, error: "No name provided."}; }
+          if (typeof timeInSeconds !== 'number' || timeInSeconds < 0 || !isFinite(timeInSeconds)) { logError("Invalid time:", timeInSeconds); alert("Timer error."); return { rankData: null, error: "Invalid time."}; }
+          if (typeof dimension !== 'number' || dimension <= 0) { logError("Invalid dimension:", dimension); alert("Maze dimension error."); return { rankData: null, error: "Invalid dimension."}; }
+          try {
+              const scoreData = { name: trimmedName, time: timeInSeconds, dimension: dimension };
+              const response = await fetch('/api/add_score', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(scoreData) });
+              log(`Add score status: ${response.status}`);
+              if (!response.ok) { let errorMsg = `Error ${response.status}`; try { const errData = await response.json(); errorMsg = errData.error || errorMsg; } catch (e) { log("No error body."); } throw new Error(errorMsg); }
+              log("Score submitted successfully.");
+              if (statusMessage) statusMessage.textContent = "Score saved!";
+              await fetchLeaderboard();
+              const rankData = calculateUserRank(trimmedName, timeInSeconds, dimension);
+              return { rankData: rankData, error: null };
+          } catch (error) {
+              logError("Error submitting score:", error);
+              alert(`Failed to save score: ${error.message}`);
+              return { rankData: null, error: error.message };
+          }
+      }
+
+      // --- calculateUserRank Function (Fixed Time Comparison) ---
+      function calculateUserRank(username, time, dimension) {
+          log(`Calculating rank for ${username}, ${time}s, ${dimension}x${dimension}`);
+          let ranks = { overall: null, size: null };
+          if (!allLeaderboardScores || allLeaderboardScores.length === 0) { log("Cannot calculate rank - leaderboard empty or not loaded"); return ranks; }
+          const overallScores = [...allLeaderboardScores].sort((a, b) => a.time - b.time);
+          const sizeSpecificScores = allLeaderboardScores
+              .filter(score => score.dimension === dimension)
+              .sort((a, b) => a.time - b.time);
+          const overallIndex = overallScores.findIndex(score =>
+              score.name === username && score.dimension === dimension
+          );
+          if (overallIndex !== -1) {
+              ranks.overall = overallIndex + 1;
+          } else {
+              log("Score not found in overall leaderboard for ranking (name/dimension mismatch?).");
+          }
+          const sizeIndex = sizeSpecificScores.findIndex(score =>
+              score.name === username
+          );
+          if (sizeIndex !== -1) {
+              ranks.size = sizeIndex + 1;
+          } else {
+               log("Score not found in size-specific leaderboard for ranking (name mismatch?).");
+          }
+          log("Rank calculation complete:", ranks);
+          return ranks;
+      }
+
+      // --- Pop-up Functions ---
+      function showPopup(time, rankData, dimension) {
+          if (!popupOverlayEl || !popupTimeEl || !popupRankOverallEl || !popupRankSizeEl) { logError("Popup elements not found!"); return; }
+          if (popupDismissTimer) { clearTimeout(popupDismissTimer); popupDismissTimer = null; }
+          popupTimeEl.textContent = `Your Time: ${formatTime(time)}`;
+          popupRankOverallEl.textContent = rankData?.overall ? `Overall Rank: ${rankData.overall}` : "Overall Rank: N/A";
+          popupRankSizeEl.textContent = rankData?.size ? `Rank for ${dimension}x${dimension}: ${rankData.size}` : `Rank for ${dimension}x${dimension}: N/A`;
+          popupOverlayEl.style.display = 'block'; // Use block for overlay visibility
+          requestAnimationFrame(() => { // Ensure display:block is rendered first
+             popupOverlayEl.classList.add('visible');
+          });
+          popupDismissTimer = setTimeout(hidePopup, 7000);
+      }
+
+      function hidePopup() {
+          if (!popupOverlayEl || !popupOverlayEl.classList.contains('visible')) return;
+          if (popupDismissTimer) { clearTimeout(popupDismissTimer); popupDismissTimer = null; }
+          popupOverlayEl.classList.remove('visible');
+          const onTransitionEnd = (event) => {
+              if (event.target === popupOverlayEl && event.propertyName === 'opacity') {
+                  log("Popup overlay transition ended");
+                  popupOverlayEl.style.display = 'none';
+                  popupOverlayEl.removeEventListener('transitionend', onTransitionEnd);
+                  handlePostWinActions();
+              }
+          };
+          popupOverlayEl.addEventListener('transitionend', onTransitionEnd);
+          setTimeout(() => {
+               if (popupOverlayEl.style.display !== 'none' && popupOverlayEl.classList.contains('visible') === false) {
+                  log("TransitionEnd fallback triggered for hidePopup");
+                  popupOverlayEl.style.display = 'none';
+                  popupOverlayEl.removeEventListener('transitionend', onTransitionEnd);
+                  handlePostWinActions();
+               }
+          }, 350); // Match transition duration + buffer
+      }
+
+      // --- Function to handle post-win actions (prompting) ---
+      function handlePostWinActions() {
+          log("Popup closed, handling post-win actions.");
+          let savedUsername = sessionStorage.getItem('mazeUsername');
+          if (!savedUsername && lastSubmittedScoreInfo) {
+               const timeFmt = formatTime(lastSubmittedScoreInfo.time);
+               const pName = prompt(`Finished in ${timeFmt}!\nEnter name for leaderboard (first time only):`, "");
+               const trimmedName = pName ? pName.trim() : null;
+               if (trimmedName) {
+                    log(`Saving username to session: ${trimmedName}`);
+                    sessionStorage.setItem('mazeUsername', trimmedName);
+               } else { log("Prompt cancelled or empty name entered. Name not saved."); }
+          } else if (savedUsername) { log("Username already saved, no prompt needed."); }
+          else { log("No score info available for prompt."); }
+          lastSubmittedScoreInfo = null;
+      }
+
+      // --- Helper to convert CSS color names/hex to RGB string ---
+      function convertCssColorToRgbString(cssColor) {
+          try {
+              if (cssColor.startsWith('rgb')) { const match = cssColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/); if (match) return `${match[1]}, ${match[2]}, ${match[3]}`; }
+              if (cssColor.startsWith('#')) { let hex = cssColor.slice(1); if (hex.length === 3) { hex = hex.split('').map(char => char + char).join(''); } if (hex.length === 6) { const r = parseInt(hex.substring(0, 2), 16); const g = parseInt(hex.substring(2, 4), 16); const b = parseInt(hex.substring(4, 6), 16); return `${r}, ${g}, ${b}`; } }
+              const tempDiv = document.createElement('div'); tempDiv.style.color = cssColor; tempDiv.style.display = 'none'; document.body.appendChild(tempDiv); const computedColor = getComputedStyle(tempDiv).color; document.body.removeChild(tempDiv); const rgbMatch = computedColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/); if (rgbMatch) { return `${rgbMatch[1]}, ${rgbMatch[2]}, ${rgbMatch[3]}`; }
+          } catch (e) { logError("Could not convert color:", cssColor, e); }
+          logError("Failed to convert color, defaulting to red's RGB");
+          return "255, 0, 0";
+      }
 
       // --- Achievement Functions ---
       function checkAchievementsOnCompletion(completionData) { log("Checking achievements:", completionData); achievementState.mazeCompletions++; log("Updated state:", achievementState); const newlyUnlocked = []; for (const [id, definition] of Object.entries(ACHIEVEMENTS_DEFINITIONS)) { if (!unlockedAchievements.has(id)) { try { if (definition.check(completionData, achievementState)) { log(`Criteria met: ${id}`); unlockedAchievements.add(id); newlyUnlocked.push(id); } } catch (e) { logError(`Error check ${id}:`, e); } } } log("Newly unlocked:", newlyUnlocked); return newlyUnlocked; }
       function displayAchievements() { if (!achievementsList) { logError("Achievements list element missing!"); return; } log("Displaying achievements list."); achievementsList.innerHTML = ''; if (Object.keys(ACHIEVEMENTS_DEFINITIONS).length === 0) { achievementsList.innerHTML = '<li class="message">No achievements defined.</li>'; return; } for (const [id, definition] of Object.entries(ACHIEVEMENTS_DEFINITIONS)) { const li = document.createElement('li'); li.classList.add('achievement-item'); const isUnlocked = unlockedAchievements.has(id); if (isUnlocked) { li.classList.add('unlocked'); li.innerHTML = `<strong>✅ ${escapeHtml(definition.name)}</strong><span>${escapeHtml(definition.description)}</span>`; } else { li.classList.add('locked'); li.innerHTML = `<strong>${escapeHtml(definition.name)}</strong><span>${escapeHtml(definition.description)}</span>`; } achievementsList.appendChild(li); } }
       function displayAchievementNotification(newlyUnlockedIds) { if (!toastContainer) return; newlyUnlockedIds.forEach((id, index) => { const definition = ACHIEVEMENTS_DEFINITIONS[id]; if (!definition) return; const toast = document.createElement('div'); toast.className = 'toast-notification'; toast.textContent = `🏆 Achievement Unlocked: ${definition.name}!`; toastContainer.appendChild(toast); setTimeout(() => { toast.classList.add('show'); }, 100 + index * 300); setTimeout(() => { toast.classList.remove('show'); toast.addEventListener('transitionend', () => toast.remove(), { once: true }); }, 4000 + index * 300); }); }
 
-      // --- Maze Drawing and Game Logic ---
+      // --- Maze Drawing and Game Logic (with rAF wrapper for stability) ---
       function drawMaze() {
-          if (!maze || maze.length === 0 || !ctx) { logError("Cannot draw: Missing maze or context."); return; }
-          
-          if (maze && maze.length > 0) {
-              log(`DRAWMAZE ENTRY -> Player (col,row): (${player.x}, ${player.y}), Goal (col,row): (${goal.x}, ${goal.y})`);
-              if (solutionPath && solutionPath.length > 0) {
-                  log(`DRAWMAZE ENTRY -> SolutionPath first 3 elements (expected [col, row]): ${JSON.stringify(solutionPath.slice(0,3))}`);
-              }
-          }
+          requestAnimationFrame(() => { // Wrap core logic
+              // log("--- drawMaze START (rAF) ---");
+              if (!maze || maze.length === 0 || !ctx) { logError("Cannot draw: Missing maze or context."); return; }
+              const rows = maze.length; const cols = maze[0].length;
+              const mazeDisplayArea = document.querySelector('.grid-maze-display');
+              const canvasContainer = document.getElementById('canvas-container');
+              if (!mazeDisplayArea || !canvasContainer ) { logError("Layout elements not found"); return; }
+              const displayAreaWidth = mazeDisplayArea.clientWidth;
+              const displayAreaHeight = mazeDisplayArea.clientHeight;
+              const canvasContainerStyle = getComputedStyle(canvasContainer);
+              const canvasContainerPaddingLeft = parseFloat(canvasContainerStyle.paddingLeft) || 0;
+              const canvasContainerPaddingRight = parseFloat(canvasContainerStyle.paddingRight) || 0;
+              const canvasContainerPaddingTop = parseFloat(canvasContainerStyle.paddingTop) || 0;
+              const canvasContainerPaddingBottom = parseFloat(canvasContainerStyle.paddingBottom) || 0;
+              const availableWidth = displayAreaWidth - canvasContainerPaddingLeft - canvasContainerPaddingRight;
+              const availableHeight = displayAreaHeight - canvasContainerPaddingTop - canvasContainerPaddingBottom;
+              if (availableWidth <= 0 || availableHeight <= 0) { logError(`Available space zero/negative. W:${availableWidth}, H:${availableHeight}`); canvas.width = 50; canvas.height = 50; return; }
+              const maxSideLength = Math.max(1, Math.floor(Math.min(availableWidth, availableHeight)));
+              if (cols <= 0 || rows <= 0) { logError("Maze dimensions invalid"); canvas.width = 0; canvas.height = 0; return; }
+              tileSize = Math.max(1, Math.floor(maxSideLength / Math.max(cols, rows)));
+              if (tileSize <= 0) tileSize = 1;
+              const finalCanvasWidth = tileSize * cols;
+              const finalCanvasHeight = tileSize * rows;
+              if (canvas.width !== finalCanvasWidth || canvas.height !== finalCanvasHeight) { log(`Applying new canvas size: ${finalCanvasWidth}x${finalCanvasHeight} (was ${canvas.width}x${canvas.height})`); canvas.width = finalCanvasWidth; canvas.height = finalCanvasHeight; } else { /* log(`Canvas size stable: ${canvas.width}x${canvas.height}`); */ }
 
-          const rows = maze.length; const cols = maze[0].length;
-          // Size calculation...
-          const vh=window.innerHeight, vw=window.innerWidth; const tH=titleH2?.offsetHeight??40; const iH=instructionsP?.offsetHeight??25; const sH=statusMessage?.offsetHeight??25; const timeH=timerDisplay?.parentElement?.offsetHeight??25; const ctrlH=controlsDiv?.offsetHeight??60; const leadH=leaderboardContainer?.offsetHeight??0; const filtH=leaderboardFilterSelect?.parentElement?.offsetHeight??0; const achH=achievementsContainer?.offsetHeight??0; const vertPad=40; const usedH=tH+iH+sH+timeH+ctrlH+filtH+leadH+vertPad; const horzPad=40; const availH=Math.max(100,vh-usedH); const availW=Math.max(100,Math.min(vw,1400)-horzPad); const tileWB=Math.floor(availW/cols); const tileHB=Math.floor(availH/rows); tileSize=Math.max(1,Math.min(tileWB,tileHB));
-          canvas.width = tileSize * cols; canvas.height = tileSize * rows;
-
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-          // Draw maze background
-          for (let row = 0; row < rows; row++) { 
-              for (let col = 0; col < cols; col++) { 
-                  const drawX = col * tileSize; 
-                  const drawY = row * tileSize; 
-                  if (maze[row]?.[col] === 1) ctx.fillStyle = "black"; 
-                  else if (row === goal.y && col === goal.x) ctx.fillStyle = "green"; 
-                  else ctx.fillStyle = "white"; 
-                  if (tileSize > 0) ctx.fillRect(drawX, drawY, tileSize, tileSize); 
-              } 
-          }
-          
-          // Draw solution path (with fix for mirrored path)
-          if (solutionPath?.length > 0 && tileSize > 0) { 
-              ctx.fillStyle = "rgba(0, 0, 255, 0.5)"; 
-              solutionPath.forEach(([path_col, path_row]) => { // path_col is X-like, path_row is Y-like
-                  if (!((path_row === player.y && path_col === player.x) || (path_row === goal.y && path_col === goal.x))) 
-                      ctx.fillRect(path_col * tileSize, path_row * tileSize, tileSize, tileSize); 
-              });
-          }
-          // Draw Player Trail
-          if (tileSize > 0 && playerTrailHistory.length > 0) { 
-              const trailLength = playerTrailHistory.length; 
-              for (let i = 0; i < trailLength; i++) { 
-                  const pos = playerTrailHistory[i]; // {x: col, y: row}
-                  const ageRatio = (MAX_TRAIL_LENGTH > 1) ? Math.min(i / (MAX_TRAIL_LENGTH -1), 1) : 1; 
-                  let alpha = TRAIL_MAX_ALPHA - (TRAIL_MAX_ALPHA - TRAIL_MIN_ALPHA) * ageRatio; 
-                  alpha = Math.max(TRAIL_MIN_ALPHA, Math.min(TRAIL_MAX_ALPHA, alpha)); 
-                  ctx.fillStyle = `rgba(${TRAIL_COLOR_RGB}, ${alpha})`; 
-                  ctx.fillRect(pos.x * tileSize, pos.y * tileSize, tileSize, tileSize); 
-              } 
-          }
-          // Draw Player Head
-          if (tileSize > 0) { 
-              ctx.fillStyle = "red"; 
-              ctx.fillRect(player.x * tileSize, player.y * tileSize, tileSize, tileSize); // player.x is col, player.y is row
-          }
-          // Draw trophy if won
-          if (gameWon && statusMessage?.textContent.includes("🎉")) { 
-              if (trophyImg?.complete && tileSize > 0) 
-                  ctx.drawImage(trophyImg, goal.x * tileSize, goal.y * tileSize, tileSize, tileSize); // goal.x is col, goal.y is row
-              else if (trophyImg && !trophyImg.complete) 
-                  setTimeout(drawMaze, 100); 
-          }
-          // --- END SIMPLIFIED DRAWING ---
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              for (let row = 0; row < rows; row++) { for (let col = 0; col < cols; col++) { const drawX = col * tileSize; const drawY = row * tileSize; if (maze[row]?.[col] === 1) ctx.fillStyle = "black"; else if (row === goal.y && col === goal.x) ctx.fillStyle = "green"; else ctx.fillStyle = "white"; if (tileSize > 0) ctx.fillRect(drawX, drawY, tileSize, tileSize); } }
+              if (solutionPath?.length > 0 && tileSize > 0) { ctx.fillStyle = "rgba(50, 205, 50, 0.55)"; solutionPath.forEach(([path_col, path_row]) => { if (!((path_row === player.y && path_col === player.x) || (path_row === goal.y && path_col === goal.x))) ctx.fillRect(path_col * tileSize, path_row * tileSize, tileSize, tileSize); }); }
+              if (tileSize > 0 && playerTrailHistory.length > 0) { const trailLength = playerTrailHistory.length; for (let i = 0; i < trailLength; i++) { const pos = playerTrailHistory[i]; const ageRatio = (MAX_TRAIL_LENGTH > 1) ? Math.min(i / (MAX_TRAIL_LENGTH -1), 1) : 1; let alpha = TRAIL_MAX_ALPHA - (TRAIL_MAX_ALPHA - TRAIL_MIN_ALPHA) * ageRatio; alpha = Math.max(TRAIL_MIN_ALPHA, Math.min(TRAIL_MAX_ALPHA, alpha)); ctx.fillStyle = `rgba(${playerTrailColorRGB}, ${alpha})`; ctx.fillRect(pos.x * tileSize, pos.y * tileSize, tileSize, tileSize); } }
+              if (tileSize > 0) { ctx.fillStyle = playerColor; ctx.fillRect(player.x * tileSize, player.y * tileSize, tileSize, tileSize); }
+              if (gameWon && statusMessage?.textContent.includes("🎉")) { if (trophyImg?.complete && tileSize > 0) ctx.drawImage(trophyImg, goal.x * tileSize, goal.y * tileSize, tileSize, tileSize); }
+              // log("--- drawMaze END (rAF) ---");
+          }); // End requestAnimationFrame
       }
 
+      // --- loadMaze, movePlayer, solveMaze ---
       async function loadMaze(dimension) {
-          dimension=parseInt(dimension); if(isNaN(dimension)){logError("Invalid dim, default 5."); dimension=5;} 
-          log(`Loading maze: ${dimension}`); 
+          if (popupOverlayEl && popupOverlayEl.classList.contains('visible')) { hidePopup(); }
+          dimension=parseInt(dimension); if(isNaN(dimension)){logError("Invalid dim, default 5."); dimension=5;}
+          log(`Loading maze: ${dimension}`);
           if(statusMessage)statusMessage.textContent="Loading Maze...";
-          currentMazeDimension=dimension; 
-          log(`Current Dim: ${currentMazeDimension}`); 
-          gameWon=false; 
-          resetTimer(); 
-          solutionPath=[]; 
-          playerTrailHistory=[]; 
-          if(instructionsP)instructionsP.style.display="block"; 
-          tryStartMusic(); 
-          try{ 
+          if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+          maze = [];
+          currentMazeDimension=dimension; gameWon=false; resetTimer(); solutionPath=[]; playerTrailHistory=[]; if(instructionsP)instructionsP.style.display="block";
+          tryStartMusic();
+          try{
               const response=await fetch(`/api/generate_maze/${currentMazeDimension}`);
-              log(`Gen status: ${response.status}`); 
-              if(!response.ok)throw new Error(`Net error: ${response.status}`); 
-              const data=await response.json(); 
-              if(!Array.isArray(data)||data.length===0||!Array.isArray(data[0]))throw new Error("Invalid maze data"); 
-              maze=data; 
-              player=findStartPosition(); 
-              goal=findGoalPosition(); 
-              log("Maze processed."); 
-              if(statusMessage)statusMessage.textContent=""; 
-              drawMaze(); 
-              log("New maze drawn.");
-          } catch(error){ 
-              logError("Load maze error:",error); 
-              if(statusMessage)statusMessage.textContent=`Error: ${error.message}`; 
-              maze=[]; 
-              if(ctx)ctx.clearRect(0,0,canvas?.width??0,canvas?.height??0); 
+              if(!response.ok)throw new Error(`Net error: ${response.status}`);
+              const data=await response.json();
+              if(!Array.isArray(data)||data.length===0||!Array.isArray(data[0]))throw new Error("Invalid maze data");
+              maze=data;
+              player=findStartPosition();
+              goal=findGoalPosition();
+              if(statusMessage)statusMessage.textContent="";
+              requestAnimationFrame(() => { drawMaze(); log("New maze drawn via rAF in loadMaze."); });
+          } catch(error){
+              logError("Load maze error:",error);
+              if(statusMessage)statusMessage.textContent=`Error: ${error.message}`;
+              maze=[];
+              if(ctx)ctx.clearRect(0,0,canvas?.width??0,canvas?.height??0);
           }
       }
-
       function movePlayer(dx, dy) {
-          if (gameWon) return; 
+          if (gameWon) return;
           let nX = player.x + dx, nY = player.y + dy;
           if (nY>=0 && nY<maze.length && nX>=0 && nX<maze[0].length && maze[nY][nX]===0) {
-              playerTrailHistory.unshift({ x: player.x, y: player.y }); 
+              playerTrailHistory.unshift({ x: player.x, y: player.y });
               if (playerTrailHistory.length > MAX_TRAIL_LENGTH) playerTrailHistory.pop();
-              startTimer(); 
-              player.x = nX; // player.x is col
-              player.y = nY; // player.y is row
-
+              startTimer();
+              player.x = nX; player.y = nY;
               drawMaze();
-
-              if (player.x === goal.x && player.y === goal.y) { // Win condition
-                  log("Goal reached!"); 
-                  gameWon = true; 
-                  stopTimer(); 
-                  if (statusMessage) statusMessage.textContent = "🎉 You reached the exit! Well done! 🎉"; 
+              if (player.x === goal.x && player.y === goal.y) {
+                  log("Goal reached!");
+                  gameWon = true;
+                  stopTimer();
+                  const finalTime = elapsedSeconds;
+                  const finalDimension = currentMazeDimension;
+                  if (statusMessage) statusMessage.textContent = "🎉 You reached the exit! Well done! 🎉";
                   if (instructionsP) instructionsP.style.display = 'none';
-                  const completionData = { dimension: currentMazeDimension, time: elapsedSeconds }; 
-                  const newlyUnlockedIds = checkAchievementsOnCompletion(completionData); 
-                  if (newlyUnlockedIds.length > 0) { 
-                      displayAchievementNotification(newlyUnlockedIds); 
-                      if (achievementsContainer?.style.display !== 'none') displayAchievements(); 
-                  }
-                  if (backgroundMusic && !backgroundMusic.paused) backgroundMusic.pause(); 
+                  const completionData = { dimension: finalDimension, time: finalTime };
+                  const newlyUnlockedIds = checkAchievementsOnCompletion(completionData);
+                  if (newlyUnlockedIds.length > 0) { displayAchievementNotification(newlyUnlockedIds); displayAchievements(); }
+                  if (backgroundMusic && !backgroundMusic.paused) backgroundMusic.pause();
                   playSound("{{ url_for('static', filename='snake_sound.m4a') }}");
-                  setTimeout(() => { 
-                      const timeFmt = formatTime(elapsedSeconds); 
-                      const pName = prompt(`Finished in ${timeFmt}!\nEnter name for leaderboard:`, ""); 
-                      if (pName !== null) submitScore(pName, elapsedSeconds); 
-                      else { log("Cancelled prompt."); fetchLeaderboard(); } 
-                  }, 150);
+                  const savedUsername = sessionStorage.getItem('mazeUsername');
+                  const nameToSubmit = savedUsername || "Player";
+                  lastSubmittedScoreInfo = { name: nameToSubmit, time: finalTime, dimension: finalDimension };
+                  submitScore(nameToSubmit, finalTime, finalDimension)
+                      .then(({ rankData, error }) => {
+                           showPopup(finalTime, rankData, finalDimension);
+                      });
               }
           }
       }
-
-      async function solveMaze() { 
-          if(!maze||maze.length===0||gameWon)return; 
-          log("Attempting solve..."); 
-          tryStartMusic(); 
-          if(statusMessage)statusMessage.textContent="Solving..."; 
-          solutionPath=[]; 
-          drawMaze(); // Draw without path first
-          try{
-              log(`SOLVEMAZE SENDING -> Start (col,row): {x: ${player.x}, y: ${player.y}}, Goal (col,row): {x: ${goal.x}, y: ${goal.y}}`);
-              const response=await fetch('/api/solve_maze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({maze:maze,start:player,goal:goal})}); 
-              log(`Solve status: ${response.status}`); 
-              if(!response.ok){const errData=await response.json().catch(()=>null);const errMsg=errData?.error||`Server error ${response.status}`; throw new Error(errMsg);} 
-              const result=await response.json(); 
-              if(result.path?.length>0){
-                  solutionPath=result.path; // solutionPath items are [col, row]
-                  log(`SOLVEMAZE RECEIVED -> SolutionPath first 3 (expected [col,row]): ${JSON.stringify(solutionPath.slice(0,3))}`);
-                  if(statusMessage)statusMessage.textContent="✅ Solution Path Shown!"; log("Solution received.");
-              } else {
-                  if(statusMessage)statusMessage.textContent="❌ No solution found."; log("No solution."); solutionPath=[];
-              } 
-          } catch(error){logError("Solve API Error:",error); if(statusMessage)statusMessage.textContent=`Error solving: ${error.message}`; solutionPath=[];} 
-          finally{drawMaze();} // Redraw with path (or lack thereof)
-      }
-
+      async function solveMaze() { if(!maze||maze.length===0||gameWon)return; if(statusMessage)statusMessage.textContent="Solving..."; tryStartMusic(); solutionPath=[]; drawMaze(); try{ const response=await fetch('/api/solve_maze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({maze:maze,start:player,goal:goal})}); if(!response.ok){const errData=await response.json().catch(()=>null);const errMsg=errData?.error||`Server error ${response.status}`; throw new Error(errMsg);} const result=await response.json(); if(result.path?.length>0){ solutionPath=result.path; if(statusMessage)statusMessage.textContent="✅ Solution Path Shown!"; } else { if(statusMessage)statusMessage.textContent="❌ No solution found."; solutionPath=[]; } } catch(error){logError("Solve API Error:",error); if(statusMessage)statusMessage.textContent=`Error solving: ${error.message}`; solutionPath=[];} finally{drawMaze();} }
 
       // --- Initialization and Event Listeners ---
       function initializeGame() {
-          log("Initializing game...");
-          canvas = document.getElementById("gameCanvas"); ctx = canvas?.getContext("2d"); newMazeBtn = document.getElementById("generate-maze-btn"); solveMazeBtn = document.getElementById("solve-maze-btn"); mazeSizeSelect = document.getElementById("mazeSizeSelect"); statusMessage = document.getElementById("statusMessage"); controlsDiv = document.querySelector('.controls'); titleH2 = document.querySelector('h2'); instructionsP = document.getElementById("instructions"); timerDisplay = document.getElementById("timerDisplay"); leaderboardList = document.getElementById("leaderboardList"); leaderboardContainer = document.getElementById("leaderboardContainer"); muteBtn = document.getElementById('mute-btn'); leaderboardFilterSelect = document.getElementById('leaderboardFilterSelect'); toggleAchievementsBtn = document.getElementById('toggleAchievementsBtn'); achievementsContainer = document.getElementById('achievementsContainer'); achievementsList = document.getElementById('achievementsList'); toastContainer = document.getElementById('toast-container');
+          canvas = document.getElementById("gameCanvas"); ctx = canvas?.getContext("2d"); newMazeBtn = document.getElementById("generate-maze-btn"); solveMazeBtn = document.getElementById("solve-maze-btn"); mazeSizeSelect = document.getElementById("mazeSizeSelect"); statusMessage = document.getElementById("statusMessage");
+          titleH2 = document.querySelector('.grid-header h2');
+          instructionsP = document.getElementById("instructions"); timerDisplay = document.getElementById("timerDisplay"); leaderboardList = document.getElementById("leaderboardList"); leaderboardContainer = document.getElementById("leaderboardContainer"); muteBtn = document.getElementById('mute-btn'); leaderboardFilterSelect = document.getElementById('leaderboardFilterSelect');
+          achievementsContainer = document.getElementById('achievementsContainer'); achievementsList = document.getElementById('achievementsList'); toastContainer = document.getElementById('toast-container');
+          popupOverlayEl = document.getElementById('winPopupOverlay');
+          popupContentEl = popupOverlayEl.querySelector('.popup-content');
+          popupTimeEl = document.getElementById('popupTime');
+          popupRankOverallEl = document.getElementById('popupRankOverall');
+          popupRankSizeEl = document.getElementById('popupRankSize');
+          closePopupBtnEl = document.getElementById('closePopupBtn');
+          snakeColorSelectEl = document.getElementById('snakeColorSelect');
 
-          if (!ctx || !newMazeBtn || !leaderboardFilterSelect || !toggleAchievementsBtn || !achievementsContainer || !achievementsList || !toastContainer ) { 
-              logError("Init failed: Critical elements missing!"); 
-              if(statusMessage) statusMessage.textContent = "Page Init Error!"; 
-              return; 
+          if (!ctx || !newMazeBtn || !leaderboardFilterSelect || !achievementsContainer || !achievementsList || !toastContainer || !popupOverlayEl || !popupContentEl || !snakeColorSelectEl || !closePopupBtnEl) {
+              logError("Init failed: Critical elements missing!");
+              if(statusMessage) statusMessage.textContent = "Page Init Error!";
+              return;
           }
 
           preloadTrophyImage(); setupAudio();
-          currentMazeDimension = parseInt(mazeSizeSelect.value || '5'); 
-          log(`Initial dimension: ${currentMazeDimension}`);
-          loadMaze(currentMazeDimension); 
+          playerColor = snakeColorSelectEl.value || "red";
+          playerTrailColorRGB = convertCssColorToRgbString(playerColor);
+          currentMazeDimension = parseInt(mazeSizeSelect.value || '5');
+          loadMaze(currentMazeDimension);
           fetchLeaderboard();
-          displayAchievements(); // Initial achievement render
+          displayAchievements();
 
-          // Attach event listeners
           newMazeBtn.addEventListener("click", () => loadMaze(parseInt(mazeSizeSelect.value)));
           solveMazeBtn.addEventListener("click", solveMaze);
           if (muteBtn) muteBtn.addEventListener('click', toggleMute);
           leaderboardFilterSelect.addEventListener('change', filterAndDisplayLeaderboard);
-          toggleAchievementsBtn.addEventListener('click', () => { if (achievementsContainer.style.display === 'none') { achievementsContainer.style.display = 'block'; toggleAchievementsBtn.textContent = 'Hide Achievements'; displayAchievements(); } else { achievementsContainer.style.display = 'none'; toggleAchievementsBtn.textContent = 'View Achievements'; } });
           document.addEventListener("keydown", handleKeyDown);
           window.addEventListener('resize', debouncedDrawMaze);
+          closePopupBtnEl.addEventListener('click', hidePopup);
+          popupOverlayEl.addEventListener('click', (event) => { if (event.target === popupOverlayEl) { hidePopup(); } });
+          snakeColorSelectEl.addEventListener('change', (event) => {
+              playerColor = event.target.value;
+              playerTrailColorRGB = convertCssColorToRgbString(playerColor);
+              log(`Player color changed to: ${playerColor} (Trail RGB: ${playerTrailColorRGB})`);
+              if (!gameWon && maze && maze.length > 0) { drawMaze(); }
+          });
 
           log("Game initialized.");
       }
-
-      const debouncedDrawMaze = debounce(() => { if (maze?.length > 0) { log("Redrawing (resize)."); drawMaze(); } }, 200);
+      const debouncedDrawMaze = debounce(() => { log("Debounced resize trigger"); if (maze?.length > 0) { drawMaze(); } }, 200);
       function handleKeyDown(event) { if (startTime === null && !gameWon) tryStartMusic(); if (gameWon) { if (['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','e','E'].includes(event.key)) event.preventDefault(); return; } const moves = {"ArrowUp":[0,-1],"w":[0,-1],"W":[0,-1],"ArrowDown":[0,1],"s":[0,1],"S":[0,1],"ArrowLeft":[-1,0],"a":[-1,0],"A":[-1,0],"ArrowRight":[1,0],"d":[1,0],"D":[1,0]}; if (moves[event.key]) { event.preventDefault(); movePlayer(...moves[event.key]); } if (event.key === 'e' || event.key === 'E') { event.preventDefault(); solveMaze(); } }
 
       document.addEventListener('DOMContentLoaded', initializeGame);
