@@ -7,6 +7,12 @@
     },
     {
         "name": "Mika",
+        "time": 3.593,
+        "dimension": 5,
+        "timestamp": "2025-05-06T09:12:29Z"
+    },
+    {
+        "name": "Mika",
         "time": 4.785,
         "dimension": 5,
         "timestamp": "2025-05-05T14:56:11Z"
@@ -16,5 +22,11 @@
         "time": 22.117,
         "dimension": 5,
         "timestamp": "2025-05-05T15:11:20Z"
+    },
+    {
+        "name": "Franka",
+        "time": 32.017,
+        "dimension": 5,
+        "timestamp": "2025-05-06T09:13:33Z"
     }
 ]
