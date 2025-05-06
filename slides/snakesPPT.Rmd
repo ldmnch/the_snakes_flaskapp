@@ -1,0 +1,135 @@
+---
+title: "Maze App"
+author: "Snakes, Inc."
+date: "2025-05-06"
+output: 
+  xaringan::moon_reader:
+    css: ["default", "custom.css"]
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+class: footer-icon
+
+## Data Structures & Algorithms
+
+**Instructor:** 
+- Meysam Goodarzi
+
+**Project:**
+- Snake Maze App
+
+**Authors:**
+- Ashley Razo, Nadine Daum, Laia Domenech Burin, Franco Bastida, Mika Erik Moeser, Nicolas Reichardt
+
+---
+
+## Demonstration of the Project
+
+Now, Ashley will show you a demo of the Snake Maze app :)
+
+---
+
+## Explanation and Approach... Welcome to the Maze 🐍
+
+**We wanted to do a fun app game and thought about _ssssnakes._**
+
+**We started by mapping out our user journey in broad terms:**
+- Landing Page. Some core layout to bind our flask app.
+- Play. Some function to generate the game (maze).
+- Solve. Some function to solve the game (for lousy players).
+
+**Based on these 3 ideas, we essentially divided our sprints:**
+
+- First sprint. Can we generate a playable maze?
+- Second sprint. How can we best execute the two core algorithms?
+- Third sprint. What features make the game appealing? Do they work?
+
+---
+class: inverse, center, middle
+
+# Analysis of Algorithmic Complexity
+
+---
+### Core Structure: Disjoint Set Union (DSU)
+.center[**(Our "Connectivity Manager")**]
+
+**What it is:** A data structure that tracks non-overlapping (disjoint) sets.
+
+**Essential Operations for Us:**
+1.  `find(item)`: Determines which set an `item` (cell) belongs to.
+- Answers: "Are these two cells already connected?"
+2.  `union(item1, item2)`: Merges the sets containing `item1` and `item2`.
+- Action: "These two cells (and their groups) are now connected."
+
+**Key Optimizations (for speed):**
+- **Path Compression:** Flattens the structure during `find` operations.
+- **Union by Rank/Size:** Keeps the set "trees" balanced during `union`.
+- Result: Makes `find` and `union` almost constant time on average: `O(α(N))` (α is extremely slow-growing).
+
+**Why DSU?** Kruskal's algorithm efficiently checks for/prevents redundancy.
+
+---
+class: footer-icon
+
+### 1 Maze Generation: Kruskal's Algorithm
+.center[*(Building the Maze, Path by Path)*]
+
+**The Goal:** Create a "perfect" maze: all parts reachable, no loops.
+Technically: Constructing a random spanning tree on a grid of cells.
+
+**How it Works (with DSU):**
+1.  Start: Each cell is its own separate region (DSU initialized).
+2.  List all interior walls; shuffle this list randomly.
+3.  Process walls one by one:
+- If a wall separates cells from *different* regions (checked via DSU `find`):
+	- Remove the wall (create a passage).
+	- Merge the two regions (using DSU `union`).
+- If cells are already in the *same* region: Do nothing (this prevents loops).
+
+**Why Kruskal's for Our Maze?**
+- Produces well-structured, perfect mazes.
+- Random shuffling offers high variety in maze layouts.
+- DSU makes it very efficient.
+
+---
+class: footer-icon
+
+### 2 Maze Solving: Breadth-First Search 
+.center[*(Finding the Quickest Way Out)*]
+
+**The Goal:** Find the *shortest* path from the player's start to the maze's exit.
+
+**How it Works:**
+1.  Think of the maze as a map (graph: cells are locations, passages are roads).
+2.  Start at the player's location.
+3.  Explore outwards in layers using a **queue** (FIFO - First-In, First-Out):
+	- Check all immediate neighbors (1 step away).
+	- Then, all *new* neighbors from those (2 steps away), and so on.
+4.  Keep track of `visited` cells to avoid going in circles or re-checking.
+5.  The first time BFS reaches the exit, that path is guaranteed to be the shortest.
+
+**Why BFS for Our Solver?**
+- Guarantees the shortest path (in terms of number of steps).
+- Always finds a path if one exists.
+- Efficient and relatively simple for grid-based paths.
+
+---
+### Complexity Insights
+**Algorithm 1 (for `D x D` cells):** Let `V = D²` (number of cells).
+
+**Time:** `O(V * α(V))` or `O(D² * α(D²))`.
+- Very fast. Nearly linear in the number of cells, scales well for big mazes.
+
+**Space:** `O(V)` or `O(D²)`.
+- Needs memory proportional to the number of cells for the grid and DSU.
+
+**Algorithm 2 (grid with `N` cells):** Let `N` be total cells in grid -> `(2D+1)²`.
+
+**Time:** `O(N)`.
+- Fast. Visits each cell and passage at most once.
+
+**Space:** `O(N)`.
+- Needs memory for queue & visited set, potentially up to the maze size.

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Maze App</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Snakes, Inc." />
+    <meta name="date" content="2025-05-06" />
+    <script src="libs/header-attrs-2.27/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link rel="stylesheet" href="custom.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# Maze App
+]
+.author[
+### Snakes, Inc.
+]
+.date[
+### 2025-05-06
+]
+
+---
+
+class: footer-icon
+
+## Data Structures &amp; Algorithms
+
+**Instructor:** 
+- Meysam Goodarzi
+
+**Project:**
+- Snake Maze App
+
+**Authors:**
+- Ashley Razo, Nadine Daum, Laia Domenech Burin, Franco Bastida, Mika Erik Moeser, Nicolas Reichardt
+
+---
+
+## Demonstration of the Project
+
+Now, Ashley will show you a demo of the Snake Maze app :)
+
+---
+
+## Explanation and Approach... Welcome to the Maze 🐍
+
+**We wanted to do a fun app game and thought about _ssssnakes._**
+
+**We started by mapping out our user journey in broad terms:**
+- Landing Page. Some core layout to bind our flask app.
+- Play. Some function to generate the game (maze).
+- Solve. Some function to solve the game (for lousy players).
+
+**Based on these 3 ideas, we essentially divided our sprints:**
+
+- First sprint. Can we generate a playable maze?
+- Second sprint. How can we best execute the two core algorithms?
+- Third sprint. What features make the game appealing? Do they work?
+
+---
+class: inverse, center, middle
+
+# Analysis of Algorithmic Complexity
+
+---
+### Core Structure: Disjoint Set Union (DSU)
+.center[**(Our "Connectivity Manager")**]
+
+**What it is:** A data structure that tracks non-overlapping (disjoint) sets.
+
+**Essential Operations for Us:**
+1.  `find(item)`: Determines which set an `item` (cell) belongs to.
+- Answers: "Are these two cells already connected?"
+2.  `union(item1, item2)`: Merges the sets containing `item1` and `item2`.
+- Action: "These two cells (and their groups) are now connected."
+
+**Key Optimizations (for speed):**
+- **Path Compression:** Flattens the structure during `find` operations.
+- **Union by Rank/Size:** Keeps the set "trees" balanced during `union`.
+- Result: Makes `find` and `union` almost constant time on average: `O(α(N))` (α is extremely slow-growing).
+
+**Why DSU?** Kruskal's algorithm efficiently checks for/prevents redundancy.
+
+---
+class: footer-icon
+
+### 1 Maze Generation: Kruskal's Algorithm
+.center[*(Building the Maze, Path by Path)*]
+
+**The Goal:** Create a "perfect" maze: all parts reachable, no loops.
+Technically: Constructing a random spanning tree on a grid of cells.
+
+**How it Works (with DSU):**
+1.  Start: Each cell is its own separate region (DSU initialized).
+2.  List all interior walls; shuffle this list randomly.
+3.  Process walls one by one:
+- If a wall separates cells from *different* regions (checked via DSU `find`):
+	- Remove the wall (create a passage).
+	- Merge the two regions (using DSU `union`).
+- If cells are already in the *same* region: Do nothing (this prevents loops).
+
+**Why Kruskal's for Our Maze?**
+- Produces well-structured, perfect mazes.
+- Random shuffling offers high variety in maze layouts.
+- DSU makes it very efficient.
+
+---
+class: footer-icon
+
+### 2 Maze Solving: Breadth-First Search 
+.center[*(Finding the Quickest Way Out)*]
+
+**The Goal:** Find the *shortest* path from the player's start to the maze's exit.
+
+**How it Works:**
+1.  Think of the maze as a map (graph: cells are locations, passages are roads).
+2.  Start at the player's location.
+3.  Explore outwards in layers using a **queue** (FIFO - First-In, First-Out):
+	- Check all immediate neighbors (1 step away).
+	- Then, all *new* neighbors from those (2 steps away), and so on.
+4.  Keep track of `visited` cells to avoid going in circles or re-checking.
+5.  The first time BFS reaches the exit, that path is guaranteed to be the shortest.
+
+**Why BFS for Our Solver?**
+- Guarantees the shortest path (in terms of number of steps).
+- Always finds a path if one exists.
+- Efficient and relatively simple for grid-based paths.
+
+---
+### Complexity Insights
+**Algorithm 1 (for `D x D` cells):** Let `V = D²` (number of cells).
+
+**Time:** `O(V * α(V))` or `O(D² * α(D²))`.
+- Very fast. Nearly linear in the number of cells, scales well for big mazes.
+
+**Space:** `O(V)` or `O(D²)`.
+- Needs memory proportional to the number of cells for the grid and DSU.
+
+**Algorithm 2 (grid with `N` cells):** Let `N` be total cells in grid -&gt; `(2D+1)²`.
+
+**Time:** `O(N)`.
+- Fast. Visits each cell and passage at most once.
+
+**Space:** `O(N)`.
+- Needs memory for queue &amp; visited set, potentially up to the maze size.
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
