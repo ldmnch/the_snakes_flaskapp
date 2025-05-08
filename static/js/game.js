@@ -1,32 +1,22 @@
 // --- Global Variables & Configuration ---
-const APP_NAME = 'MazeGame'; // Define an app name for logs
+const APP_NAME = 'MazeGame';
 const DEBUG_MODE = true; // Set to false in production to reduce console noise
+const MAX_LEADERBOARD_ENTRIES_DISPLAY = 10; // How many scores to show per category
 
 // --- Streamlined Logger ---
 const logger = {
     _log: function(level, ...args) {
-        if (!DEBUG_MODE && level !== 'error' && level !== 'warn') { // Only show errors/warnings in non-debug
+        if (!DEBUG_MODE && level !== 'error' && level !== 'warn') {
             return;
         }
         const prefix = `[${APP_NAME}]`;
         switch(level) {
-            case 'log':
-                console.log(prefix, ...args);
-                break;
-            case 'info':
-                console.info(prefix, ...args);
-                break;
-            case 'warn':
-                console.warn(prefix, ...args);
-                break;
-            case 'error':
-                console.error(prefix, ...args);
-                break;
-            case 'debug': // console.debug might be filtered by browser console settings
-                if (DEBUG_MODE) console.debug(prefix, ...args);
-                break;
-            default:
-                console.log(prefix, `(${level})`, ...args);
+            case 'log': console.log(prefix, ...args); break;
+            case 'info': console.info(prefix, ...args); break;
+            case 'warn': console.warn(prefix, ...args); break;
+            case 'error': console.error(prefix, ...args); break;
+            case 'debug': if (DEBUG_MODE) console.debug(prefix, ...args); break;
+            default: console.log(prefix, `(${level})`, ...args);
         }
     },
     log: function(...args) { this._log('log', ...args); },
@@ -36,14 +26,14 @@ const logger = {
     debug: function(...args) { this._log('debug', ...args); }
 };
 
-// --- Existing Global Variables (to be refactored later if desired) ---
+// --- Existing Global Variables ---
 let trophyImg; let backgroundMusic; let musicStarted = false; let isMuted = false;
 let startTime = null; let timerInterval = null; let elapsedSeconds = 0; let gameWon = false;
 let tileSize = 10; let maze = []; let player = { x: 1, y: 1 }; let goal = { x: 1, y: 1 };
 let solutionPath = []; let playerTrailHistory = [];
 const MAX_TRAIL_LENGTH = 16;
 const TRAIL_MAX_ALPHA = 0.6; const TRAIL_MIN_ALPHA = 0.05;
-let currentMazeDimension = 5; let allLeaderboardScores = [];
+let currentMazeDimension = 5; let allLeaderboardScores = []; // Will store ALL scores fetched
 let unlockedAchievements = new Set();
 let achievementState = { mazeCompletions: 0 };
 let playerColor = "red";
@@ -72,12 +62,8 @@ let canvas, ctx, newMazeBtn, solveMazeBtn, mazeSizeSelect, statusMessage,
     achievementsContainer, achievementsList, toastContainer;
 
 // --- Utility & Core Functions ---
-// REMOVE: function log(...args) { console.log("MAZE_DEBUG:", ...args); }
-// REMOVE: function logError(...args) { console.error("MAZE_ERROR:", ...args); }
-// REPLACE old log/logError calls with logger.log, logger.info, logger.warn, logger.error
-
 function debounce(func, wait) { let timeout; return function executedFunction(...args) { const later = () => { clearTimeout(timeout); func(...args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; };
-function escapeHtml(unsafe) { if (typeof unsafe !== 'string') return ''; return unsafe.replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">"); } // Fixed HTML escaping
+function escapeHtml(unsafe) { if (typeof unsafe !== 'string') return ''; return unsafe.replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">"); }
 function setupAudio() { try { backgroundMusic = new Audio("static/background_music.m4a"); backgroundMusic.loop = true; backgroundMusic.volume = 0.3; logger.info("BG music object created."); } catch (e) { logger.error("Audio object creation error:", e); } }
 function toggleMute() { if (!backgroundMusic) return; isMuted = !isMuted; backgroundMusic.muted = isMuted; if (muteBtn) muteBtn.textContent = isMuted ? "🔊 Unmute" : "🔇 Mute"; logger.info("Muted status:", isMuted); }
 function tryStartMusic() { if (backgroundMusic && (!musicStarted || backgroundMusic.paused)) { logger.info("Attempting music play..."); backgroundMusic.play().then(() => { logger.info("BG music playing."); musicStarted = true; backgroundMusic.muted = isMuted; }).catch(error => { logger.warn("BG music play failed (often due to browser policy until user interaction):", error.message); if (!musicStarted) musicStarted = false; }); } else if (backgroundMusic && !backgroundMusic.paused) { backgroundMusic.muted = isMuted; } }
@@ -94,9 +80,80 @@ function convertCssColorToRgbString(cssColor) { try { if (cssColor.startsWith('r
 
 
 // --- Leaderboard Functions ---
-function displayLeaderboard(scores) { if (!leaderboardList || !leaderboardFilterSelect) { logger.error("Leaderboard list or filter select element missing!"); return; } const currentFilter = leaderboardFilterSelect.value; logger.debug(`Displaying leaderboard for filter: ${currentFilter}`); leaderboardList.innerHTML = ''; if (!scores || !Array.isArray(scores) || scores.length === 0) { leaderboardList.innerHTML = '<li class="message">No scores for this size!</li>'; return; } scores.forEach(score => { const li = document.createElement('li'); const name = score?.name ? escapeHtml(String(score.name)) : 'Unknown'; const time = (score?.time !== undefined) ? formatTime(Number(score.time)) : '--:--'; const dimension = score?.dimension ?? '?'; if (currentFilter === 'all') { li.textContent = `${name} - ${time} (${dimension}x${dimension})`; } else { li.textContent = `${name} - ${time}`; } leaderboardList.appendChild(li); }); }
-function filterAndDisplayLeaderboard() { if (!leaderboardFilterSelect || !allLeaderboardScores) { logger.error("Cannot filter leaderboard: filter select or scores data missing."); return; } const selectedDim = leaderboardFilterSelect.value; logger.info(`Filtering leaderboard for dimension: ${selectedDim}`); let filteredScores = []; if (selectedDim === 'all') { filteredScores = allLeaderboardScores; } else { filteredScores = allLeaderboardScores.filter(score => score.dimension == selectedDim); } filteredScores.sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity)); displayLeaderboard(filteredScores); }
-async function fetchLeaderboard() { logger.info("Fetching full leaderboard..."); if (!leaderboardList) return; leaderboardList.innerHTML = '<li class="message">Loading...</li>'; try { const response = await fetch('/api/get_leaderboard'); if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`); const scores = await response.json(); if (!Array.isArray(scores)) { logger.error("Leaderboard data received is not an array:", scores); throw new Error("Invalid data format from server."); } allLeaderboardScores = scores; logger.info(`Stored ${allLeaderboardScores.length} total scores from leaderboard.`); filterAndDisplayLeaderboard(); } catch (error) { logger.error("Error fetching or processing leaderboard:", error); allLeaderboardScores = []; if (leaderboardList) leaderboardList.innerHTML = '<li class="message">Error loading scores.</li>'; } }
+function displayLeaderboard(scoresToDisplay, currentFilter) {
+    if (!leaderboardList) { logger.error("Leaderboard list element missing for display!"); return; }
+    logger.debug(`Displaying ${scoresToDisplay.length} scores for filter: ${currentFilter}`);
+    leaderboardList.innerHTML = ''; 
+
+    if (!scoresToDisplay || scoresToDisplay.length === 0) {
+        leaderboardList.innerHTML = `<li class="message">No scores yet for this ${currentFilter === 'all' ? 'leaderboard' : 'size'}!</li>`;
+        return;
+    }
+
+    scoresToDisplay.forEach(score => {
+        const li = document.createElement('li');
+        const name = score?.name ? escapeHtml(String(score.name)) : 'Unknown';
+        const time = (score?.time !== undefined) ? formatTime(Number(score.time)) : '--:--';
+        const dimension = score?.dimension ?? '?';
+        if (currentFilter === 'all') {
+            li.textContent = `${name} - ${time} (${dimension}x${dimension})`;
+        } else {
+            li.textContent = `${name} - ${time}`;
+        }
+        leaderboardList.appendChild(li);
+    });
+}
+
+function filterAndDisplayLeaderboard() {
+    if (!leaderboardFilterSelect || !allLeaderboardScores) {
+        logger.error("Cannot filter leaderboard: filter select or allLeaderboardScores data missing.");
+        return;
+    }
+    const selectedDim = leaderboardFilterSelect.value;
+    logger.info(`Filtering leaderboard for dimension: ${selectedDim}`);
+
+    let filteredScores = [];
+    if (selectedDim === 'all') {
+        // For 'all', sort all scores by time.
+        filteredScores = [...allLeaderboardScores].sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity));
+    } else {
+        // For a specific dimension, filter then sort.
+        filteredScores = allLeaderboardScores
+            .filter(score => score.dimension == selectedDim)
+            .sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity));
+    }
+
+    // Take only the top N (defined by MAX_LEADERBOARD_ENTRIES_DISPLAY) for display
+    const scoresForDisplay = filteredScores.slice(0, MAX_LEADERBOARD_ENTRIES_DISPLAY);
+
+    displayLeaderboard(scoresForDisplay, selectedDim);
+}
+
+async function fetchLeaderboard() {
+    logger.info("Fetching full leaderboard...");
+    if (!leaderboardList) { logger.error("Leaderboard list element not found during fetch."); return; }
+    leaderboardList.innerHTML = '<li class="message">Loading...</li>';
+    try {
+        const response = await fetch('/api/get_leaderboard'); // Fetches ALL scores now
+        if (!response.ok) {
+            let errorMsg = `HTTP error! Status: ${response.status}`;
+            try { const errData = await response.json(); errorMsg = errData.error || errorMsg; } catch (e) { /* no json error body */ }
+            throw new Error(errorMsg);
+        }
+        const scores = await response.json();
+        if (!Array.isArray(scores)) {
+            logger.error("Leaderboard data received is not an array:", scores);
+            throw new Error("Invalid data format from server.");
+        }
+        allLeaderboardScores = scores; // Store all scores locally
+        logger.info(`Stored ${allLeaderboardScores.length} total scores locally from leaderboard.`);
+        filterAndDisplayLeaderboard(); // This will now filter the full list and take top N
+    } catch (error) {
+        logger.error("Error fetching or processing leaderboard:", error);
+        allLeaderboardScores = [];
+        if (leaderboardList) leaderboardList.innerHTML = '<li class="message">Error loading scores.</li>';
+    }
+}
 
 // --- submitScore Function ---
 async function submitScore(name, timeInSeconds, dimension) {
@@ -125,7 +182,7 @@ async function submitScore(name, timeInSeconds, dimension) {
         }
         logger.info("Score submitted successfully to API.");
         if (statusMessage) statusMessage.textContent = "Score saved!";
-        await fetchLeaderboard(); 
+        await fetchLeaderboard(); // Refresh allLeaderboardScores with the newly added score
         const rankData = calculateUserRank(trimmedName, timeInSeconds, dimension); 
         logger.info("Rank data after submission:", rankData);
         return { rankData: rankData, error: null };
@@ -140,7 +197,7 @@ async function submitScore(name, timeInSeconds, dimension) {
 function calculateUserRank(username, time, dimension) {
     logger.info(`Calculating rank for ${username}, ${time.toFixed(3)}s, ${dimension}x${dimension}`);
     let ranks = { overall: null, size: null };
-    if (!allLeaderboardScores || allLeaderboardScores.length === 0) {
+    if (!allLeaderboardScores || allLeaderboardScores.length === 0) { // Uses the full list
         logger.warn("Cannot calculate rank - leaderboard empty or not loaded");
         return ranks;
     }
@@ -193,8 +250,8 @@ function showPopup(time, rankData, dimension, requiresNamePrompt = false) {
         popupPromptInfoEl.style.display = 'none';
     }
 
-    popupOverlayEl.style.display = 'block'; // Make it available for transition
-    requestAnimationFrame(() => { // Ensure display:block is processed before adding class
+    popupOverlayEl.style.display = 'block';
+    requestAnimationFrame(() => {
        popupOverlayEl.classList.add('visible');
     });
     popupDismissTimer = setTimeout(hidePopup, 7000);
@@ -273,10 +330,10 @@ function checkAchievementsOnCompletion(completionData) { logger.info("Checking a
 function displayAchievements() { if (!achievementsList) { logger.error("Achievements list element missing!"); return; } logger.debug("Displaying achievements list."); achievementsList.innerHTML = ''; if (Object.keys(ACHIEVEMENTS_DEFINITIONS).length === 0) { achievementsList.innerHTML = '<li class="message">No achievements defined.</li>'; return; } for (const [id, definition] of Object.entries(ACHIEVEMENTS_DEFINITIONS)) { const li = document.createElement('li'); li.classList.add('achievement-item'); const isUnlocked = unlockedAchievements.has(id); if (isUnlocked) { li.classList.add('unlocked'); li.innerHTML = `<strong>✅ ${escapeHtml(definition.name)}</strong><span>${escapeHtml(definition.description)}</span>`; } else { li.classList.add('locked'); li.innerHTML = `<strong>${escapeHtml(definition.name)}</strong><span>${escapeHtml(definition.description)}</span>`; } achievementsList.appendChild(li); } }
 function displayAchievementNotification(newlyUnlockedIds) { if (!toastContainer) return; newlyUnlockedIds.forEach((id, index) => { const definition = ACHIEVEMENTS_DEFINITIONS[id]; if (!definition) return; const toast = document.createElement('div'); toast.className = 'toast-notification'; toast.textContent = `🏆 Achievement Unlocked: ${definition.name}!`; toastContainer.appendChild(toast); setTimeout(() => { toast.classList.add('show'); }, 100 + index * 300); setTimeout(() => { toast.classList.remove('show'); toast.addEventListener('transitionend', () => toast.remove(), { once: true }); }, 4000 + index * 300); }); }
 
-// --- Maze Drawing and Game Logic (with rAF wrapper for stability) ---
+// --- Maze Drawing and Game Logic ---
 function drawMaze() {
     requestAnimationFrame(() => {
-        if (!maze || maze.length === 0 || !ctx) { /* logger.debug("Cannot draw: Missing maze or context."); */ return; }
+        if (!maze || maze.length === 0 || !ctx) { return; }
         const rows = maze.length; const cols = maze[0].length;
         const mazeDisplayArea = document.querySelector('.grid-maze-display');
         const canvasContainer = document.getElementById('canvas-container');
@@ -347,7 +404,7 @@ function movePlayer(dx, dy) {
     if (nY>=0 && nY<maze.length && nX>=0 && nX<maze[0].length && maze[nY][nX]===0) {
         playerTrailHistory.unshift({ x: player.x, y: player.y });
         if (playerTrailHistory.length > MAX_TRAIL_LENGTH) playerTrailHistory.pop();
-        startTimer(); // Start timer on first valid move
+        startTimer();
         player.x = nX; player.y = nY;
         drawMaze();
 
@@ -367,7 +424,7 @@ function movePlayer(dx, dy) {
             const newlyUnlockedIds = checkAchievementsOnCompletion(completionData);
             if (newlyUnlockedIds.length > 0) { displayAchievementNotification(newlyUnlockedIds); displayAchievements(); }
             if (backgroundMusic && !backgroundMusic.paused) backgroundMusic.pause();
-            playSound("static/snake_sound.m4a"); // Ensure this path is correct relative to HTML or use full path via url_for if this was dynamic
+            playSound("static/snake_sound.m4a");
 
             const savedUsername = sessionStorage.getItem('mazeUsername');
 
@@ -396,14 +453,12 @@ async function solveMaze() { if(!maze||maze.length===0||gameWon)return; if(statu
 function initializeGame() {
     logger.info("Initializing game UI and logic...");
     canvas = document.getElementById("gameCanvas"); 
-    // ctx should only be assigned if canvas exists
     if (canvas) {
       ctx = canvas.getContext("2d");
     } else {
       logger.error("CRITICAL: gameCanvas element not found!");
-      // Potentially display an error to the user on the page itself
       if (document.body) document.body.innerHTML = "<p style='color:red; font-size:2em; text-align:center;'>Error: Game canvas not found. Cannot initialize game.</p>";
-      return; // Stop initialization
+      return;
     }
 
     newMazeBtn = document.getElementById("generate-maze-btn"); 
@@ -421,7 +476,7 @@ function initializeGame() {
     achievementsList = document.getElementById('achievementsList'); 
     toastContainer = document.getElementById('toast-container');
     popupOverlayEl = document.getElementById('winPopupOverlay');
-    popupContentEl = popupOverlayEl?.querySelector('.popup-content'); // Optional chaining
+    popupContentEl = popupOverlayEl?.querySelector('.popup-content');
     popupTimeEl = document.getElementById('popupTime');
     popupRankOverallEl = document.getElementById('popupRankOverall');
     popupRankSizeEl = document.getElementById('popupRankSize');
@@ -429,28 +484,24 @@ function initializeGame() {
     closePopupBtnEl = document.getElementById('closePopupBtn');
     snakeColorSelectEl = document.getElementById('snakeColorSelect');
 
-    // Check for critical elements (canvas already checked)
     const criticalElements = { newMazeBtn, solveMazeBtn, mazeSizeSelect, statusMessage, leaderboardList, leaderboardFilterSelect, achievementsList, toastContainer, popupOverlayEl, popupContentEl, popupTimeEl, popupRankOverallEl, popupRankSizeEl, popupPromptInfoEl, closePopupBtnEl, snakeColorSelectEl, timerDisplay, instructionsP };
     for (const [elName, el] of Object.entries(criticalElements)) {
         if (!el) {
             logger.error(`Initialization failed: Critical DOM element '${elName}' is missing!`);
-            // Optionally, disable parts of the UI or show a general error
             if (statusMessage) statusMessage.textContent = "Page Initialization Error! Some UI elements are missing.";
-            // For some missing elements, you might want to return early if game is unplayable
         }
     }
     
     preloadTrophyImage(); 
     setupAudio();
-    playerColor = snakeColorSelectEl ? snakeColorSelectEl.value : "red"; // Default if select missing
+    playerColor = snakeColorSelectEl ? snakeColorSelectEl.value : "red";
     playerTrailColorRGB = convertCssColorToRgbString(playerColor);
-    currentMazeDimension = parseInt(mazeSizeSelect ? mazeSizeSelect.value : '5'); // Default if select missing
+    currentMazeDimension = parseInt(mazeSizeSelect ? mazeSizeSelect.value : '5');
     
     loadMaze(currentMazeDimension); 
     fetchLeaderboard();
     displayAchievements();
 
-    // Event Listeners (check if elements exist before adding listeners)
     if (newMazeBtn) newMazeBtn.addEventListener("click", () => {
         logger.info("Generate New Maze button clicked.");
         loadMaze(parseInt(mazeSizeSelect.value));
@@ -462,8 +513,8 @@ function initializeGame() {
     if (muteBtn) muteBtn.addEventListener('click', toggleMute);
     if (leaderboardFilterSelect) leaderboardFilterSelect.addEventListener('change', filterAndDisplayLeaderboard);
     
-    document.addEventListener("keydown", handleKeyDown); // Global key listener
-    window.addEventListener('resize', debouncedDrawMaze); // Global resize listener
+    document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener('resize', debouncedDrawMaze);
 
     if (closePopupBtnEl) closePopupBtnEl.addEventListener('click', () => {
         logger.info("Popup close button clicked.");
@@ -487,5 +538,4 @@ function initializeGame() {
 const debouncedDrawMaze = debounce(() => { logger.debug("Debounced resize: Triggering drawMaze."); if (maze?.length > 0) { drawMaze(); } }, 200);
 function handleKeyDown(event) { if (startTime === null && !gameWon) tryStartMusic(); if (gameWon) { if (['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','e','E'].includes(event.key)) event.preventDefault(); return; } const moves = {"ArrowUp":[0,-1],"w":[0,-1],"W":[0,-1],"ArrowDown":[0,1],"s":[0,1],"S":[0,1],"ArrowLeft":[-1,0],"a":[-1,0],"A":[-1,0],"ArrowRight":[1,0],"d":[1,0],"D":[1,0]}; if (moves[event.key]) { event.preventDefault(); movePlayer(...moves[event.key]); } if (event.key === 'e' || event.key === 'E') { event.preventDefault(); solveMaze(); } }
 
-// Ensure DOM is fully loaded before initializing
 document.addEventListener('DOMContentLoaded', initializeGame);
