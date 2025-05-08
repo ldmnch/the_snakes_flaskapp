@@ -1,137 +1,136 @@
-import numpy as np
+# src/maze_generator.py 
+
 import random
-from typing import List, Tuple # For type hinting
+from typing import List, Tuple
+import numpy as np
 
 class DisjointSet:
-    """A data structure that keeps track of disjoint subsets."""
-    
+    """
+    A data structure implementing the Disjoint Set Union (DSU) or Union-Find algorithm.
+    Used to track connectivity of cells during maze generation.
+    Optimized with Path Compression and Union by Rank.
+    """
+
     def __init__(self, count: int):
-        """
-        Initializes a DisjointSet with 'count' elements.
-        
-        Args:
-            count (int): The number of elements in the disjoint set.
-        """
-        self.parent: List[int] = list(range(count)) 
+        """Initializes 'count' disjoint sets."""
+        if count < 0:
+            raise ValueError("Number of elements cannot be negative")
+        self.parent: List[int] = list(range(count))
         self.rank: List[int] = [0] * count
-    
+
     def find(self, x: int) -> int:
-        """
-        Finds the representative (root) of the set that contains 'x'.
-        
-        Args:
-            x (int): The element to find the representative of.
-        
-        Returns:
-            int: The root (representative) of the set containing 'x'.
-        """
-        if self.parent[x] != x:
-            self.parent[x] = self.find(self.parent[x]) # Path compression
+        """Finds the representative (root) of the set containing element 'x' with path compression."""
+        if self.parent[x] == x:
+            return x
+        # Path compression: Point node directly to the root
+        self.parent[x] = self.find(self.parent[x])
         return self.parent[x]
-    
+
     def union(self, x: int, y: int) -> bool:
         """
-        Unites the sets containing 'x' and 'y' if they are not already in the same set, using union by rank.
-        
-        Args:
-            x (int): The first element to unite.
-            y (int): The second element to unite.
-        
-        Returns:
-            bool: True if the sets were united, False if they were already in the same set.
+        Unites the sets containing elements 'x' and 'y' using union by rank.
+        Returns True if a union was performed, False if 'x' and 'y' were already in the same set.
         """
         root_x: int = self.find(x)
         root_y: int = self.find(y)
-        
+
         if root_x == root_y:
-            return False # Already in the same set
-        
-        # Union by rank: attach the smaller tree under the root of the larger tree
+            return False  # Already connected
+
+        # Union by rank heuristic: Attach shorter tree to taller tree
         if self.rank[root_x] < self.rank[root_y]:
             self.parent[root_x] = root_y
         elif self.rank[root_x] > self.rank[root_y]:
             self.parent[root_y] = root_x
         else:
-            self.parent[root_y] = root_x # Make root_x the new root
-            self.rank[root_x] += 1 # Increment rank of the new root
-        
+            # Same rank: Choose one as parent and increment its rank
+            self.parent[root_y] = root_x
+            self.rank[root_x] += 1
         return True
 
 
 class Maze:
-    """Generates and manages a maze using Kruskal's algorithm."""
-    
+    """
+    Generates a perfect maze using a grid graph and Kruskal's algorithm with Disjoint Set Union.
+    A perfect maze has no loops and all cells are reachable from any other cell.
+    Grid representation: 1=Wall, 0=Passage.
+    """
+
     def __init__(self, dimension: int):
         """
-        Initializes a maze of the given dimension.
-        
+        Initializes the maze grid structure based on the desired cell dimension.
+        The grid size will be (2*dimension + 1) to accommodate walls between cells.
+
         Args:
-            dimension (int): The dimension of the maze; the maze will have 'dimension' rows and columns of cells.
+            dimension (int): The number of cells along one side of the maze (e.g., 5 for a 5x5 cell maze).
         """
+        if dimension <= 0:
+            raise ValueError("Maze dimension must be positive.")
         self.dimension: int = dimension
-        self.grid_size: int = 2 * dimension + 1 
-        # Assuming numpy arrays are of integer type by default based on np.ones usage
+        self.grid_size: int = 2 * dimension + 1
+        # Initialize grid with all walls (1)
         self.grid: np.ndarray = np.ones((self.grid_size, self.grid_size), dtype=int)
-        self._initialize_grid()
-    
-    def _initialize_grid(self) -> None:
-        """
-        Marks the center of each cell as a passage (0).
-        This method sets the interior cells of the maze to be passages, excluding the outer walls.
-        """
+        self._initialize_passages()
+
+    def _initialize_passages(self) -> None:
+        """Marks the internal grid locations corresponding to cell centers as passages (0)."""
+        # Cell centers are at odd grid coordinates (e.g., (1,1), (1,3), (3,1))
         for y in range(self.dimension):
             for x in range(self.dimension):
-                self.grid[2*y + 1, 2*x + 1] = 0 # Mark cell center as passage
-    
+                self.grid[2 * y + 1, 2 * x + 1] = 0
+
     def _get_walls(self) -> List[Tuple[int, int, int, int]]:
         """
-        Creates a list of possible walls between cells, both horizontal and vertical.
-        
-        Returns:
-            List[Tuple[int, int, int, int]]: A list of walls, each represented as a tuple (y1, x1, y2, x2), 
-                                              where (y1, x1) and (y2, x2) are cell coordinates separated by the wall.
+        Generates a list of all potential interior walls between adjacent cells.
+        Each wall is represented by the coordinates of the two cells it separates.
+        Returns the list of walls shuffled randomly.
         """
         walls: List[Tuple[int, int, int, int]] = []
-        # Horizontal walls (between cells in the same row)
+        # Horizontal walls (separating cells (y, x) and (y, x+1))
         for y in range(self.dimension):
-            for x in range(self.dimension - 1): # Up to second to last column
+            for x in range(self.dimension - 1):
                 walls.append((y, x, y, x + 1))
-        # Vertical walls (between cells in the same column)
-        for y in range(self.dimension - 1): # Up to second to last row
+        # Vertical walls (separating cells (y, x) and (y+1, x))
+        for y in range(self.dimension - 1):
             for x in range(self.dimension):
                 walls.append((y, x, y + 1, x))
-        
-        random.shuffle(walls) # Shuffle walls randomly for Kruskal's algorithm
+
+        random.shuffle(walls)  # Crucial for generating random mazes with Kruskal's
         return walls
-    
+
     def generate(self) -> None:
         """
-        Generates the maze using Kruskal's algorithm.
-        
-        The algorithm iterates through all walls and removes the wall if it connects two different sets,
-        ensuring that all cells are connected, creating a perfect maze.
+        Generates the maze structure using Kruskal's algorithm.
+        Iterates through shuffled walls, removing a wall (making it a passage)
+        if the cells it separates are not already connected, until all cells are connected.
         """
-        ds: DisjointSet = DisjointSet(self.dimension * self.dimension) # Disjoint set for cell connectivity
-        walls: List[Tuple[int, int, int, int]] = self._get_walls()
-        
+        # Map each cell (y, x) to a unique index for DSU: index = y * dimension + x
+        num_cells = self.dimension * self.dimension
+        if num_cells == 0:  # Handle edge case of 0 dimension (though prevented by init)
+            return
+        ds = DisjointSet(num_cells)
+        walls = self._get_walls()
+
+        num_edges_added = 0
+        # A spanning tree on V vertices needs exactly V-1 edges.
+        target_edges = num_cells - 1
+
         for y1, x1, y2, x2 in walls:
-            # Convert 2D cell coordinates to 1D index for DisjointSet
-            cell1_idx: int = y1 * self.dimension + x1
-            cell2_idx: int = y2 * self.dimension + x2
-            
-            # If the cells are not already connected, remove the wall between them
-            if ds.find(cell1_idx) != ds.find(cell2_idx):
-                # Calculate grid coordinates of the wall itself
-                wall_y: int = y1 + y2 + 1 
-                wall_x: int = x1 + x2 + 1
-                self.grid[wall_y, wall_x] = 0  # Remove wall (set to passage)
-                ds.union(cell1_idx, cell2_idx) # Unite the sets of the two cells
-    
+            # Stop early if the maze is fully connected
+            if num_edges_added >= target_edges:
+                break
+
+            cell1_idx = y1 * self.dimension + x1
+            cell2_idx = y2 * self.dimension + x2
+
+            # If uniting the sets is successful (i.e., cells were disconnected)
+            if ds.union(cell1_idx, cell2_idx):
+                # Convert cell coordinates to grid coordinates of the wall between them
+                wall_y = y1 + y2 + 1
+                wall_x = x1 + x2 + 1
+                self.grid[wall_y, wall_x] = 0  # Mark wall as passage (remove wall)
+                num_edges_added += 1
+
     def to_list(self) -> List[List[int]]:
-        """
-        Converts the maze grid (numpy array) to a list of lists for easier representation or API response.
-        
-        Returns:
-            List[List[int]]: The maze represented as a list of lists of integers (0 for passages, 1 for walls).
-        """
+        """Converts the internal numpy grid to a standard Python list of lists."""
         return self.grid.tolist()
