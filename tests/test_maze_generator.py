@@ -1,8 +1,8 @@
 # test_maze_generator.py
-#21 tests in total
+# s21 tests in total
 
 import pytest
-from maze_generator import DisjointSet, Maze
+from src.maze_generator import DisjointSet, Maze
 
 # --- DisjointSet Tests ---
 

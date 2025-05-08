@@ -1,20 +1,21 @@
 import numpy as np
 import random
+from typing import List, Tuple # For type hinting
 
 class DisjointSet:
     """A data structure that keeps track of disjoint subsets."""
     
-    def __init__(self, count):
+    def __init__(self, count: int):
         """
         Initializes a DisjointSet with 'count' elements.
         
         Args:
             count (int): The number of elements in the disjoint set.
         """
-        self.parent = list(range(count)) 
-        self.rank = [0] * count
+        self.parent: List[int] = list(range(count)) 
+        self.rank: List[int] = [0] * count
     
-    def find(self, x):
+    def find(self, x: int) -> int:
         """
         Finds the representative (root) of the set that contains 'x'.
         
@@ -25,10 +26,10 @@ class DisjointSet:
             int: The root (representative) of the set containing 'x'.
         """
         if self.parent[x] != x:
-            self.parent[x] = self.find(self.parent[x])
+            self.parent[x] = self.find(self.parent[x]) # Path compression
         return self.parent[x]
     
-    def union(self, x, y):
+    def union(self, x: int, y: int) -> bool:
         """
         Unites the sets containing 'x' and 'y' if they are not already in the same set, using union by rank.
         
@@ -39,20 +40,20 @@ class DisjointSet:
         Returns:
             bool: True if the sets were united, False if they were already in the same set.
         """
-        root_x = self.find(x)
-        root_y = self.find(y)
+        root_x: int = self.find(x)
+        root_y: int = self.find(y)
         
         if root_x == root_y:
-            return False
+            return False # Already in the same set
         
-        # Union by rank: attach the smaller tree under the larger tree
+        # Union by rank: attach the smaller tree under the root of the larger tree
         if self.rank[root_x] < self.rank[root_y]:
             self.parent[root_x] = root_y
         elif self.rank[root_x] > self.rank[root_y]:
             self.parent[root_y] = root_x
         else:
-            self.parent[root_y] = root_x
-            self.rank[root_x] += 1
+            self.parent[root_y] = root_x # Make root_x the new root
+            self.rank[root_x] += 1 # Increment rank of the new root
         
         return True
 
@@ -60,71 +61,77 @@ class DisjointSet:
 class Maze:
     """Generates and manages a maze using Kruskal's algorithm."""
     
-    def __init__(self, dimension):
+    def __init__(self, dimension: int):
         """
         Initializes a maze of the given dimension.
         
         Args:
-            dimension (int): The dimension of the maze, the maze will have 'dimension' rows and columns of cells.
+            dimension (int): The dimension of the maze; the maze will have 'dimension' rows and columns of cells.
         """
-        self.dimension = dimension
-        self.grid_size = 2 * dimension + 1 
-        self.grid = np.ones((self.grid_size, self.grid_size), dtype=int)
+        self.dimension: int = dimension
+        self.grid_size: int = 2 * dimension + 1 
+        # Assuming numpy arrays are of integer type by default based on np.ones usage
+        self.grid: np.ndarray = np.ones((self.grid_size, self.grid_size), dtype=int)
         self._initialize_grid()
     
-    def _initialize_grid(self):
+    def _initialize_grid(self) -> None:
         """
         Marks the center of each cell as a passage (0).
         This method sets the interior cells of the maze to be passages, excluding the outer walls.
         """
         for y in range(self.dimension):
             for x in range(self.dimension):
-                self.grid[2*y + 1, 2*x + 1] = 0
+                self.grid[2*y + 1, 2*x + 1] = 0 # Mark cell center as passage
     
-    def _get_walls(self):
+    def _get_walls(self) -> List[Tuple[int, int, int, int]]:
         """
         Creates a list of possible walls between cells, both horizontal and vertical.
         
         Returns:
-            list: A list of walls, each represented as a tuple (y1, x1, y2, x2), where
-                  (y1, x1) and (y2, x2) are the endpoints of the wall.
+            List[Tuple[int, int, int, int]]: A list of walls, each represented as a tuple (y1, x1, y2, x2), 
+                                              where (y1, x1) and (y2, x2) are cell coordinates separated by the wall.
         """
-        walls = []
+        walls: List[Tuple[int, int, int, int]] = []
+        # Horizontal walls (between cells in the same row)
         for y in range(self.dimension):
-            for x in range(self.dimension - 1):
-                walls.append((y, x, y, x + 1))  # Horizontal walls
-        for y in range(self.dimension - 1):
+            for x in range(self.dimension - 1): # Up to second to last column
+                walls.append((y, x, y, x + 1))
+        # Vertical walls (between cells in the same column)
+        for y in range(self.dimension - 1): # Up to second to last row
             for x in range(self.dimension):
-                walls.append((y, x, y + 1, x))  # Vertical walls
-        random.shuffle(walls)  # Shuffle walls randomly for Kruskal's algorithm
+                walls.append((y, x, y + 1, x))
+        
+        random.shuffle(walls) # Shuffle walls randomly for Kruskal's algorithm
         return walls
     
-    def generate(self):
+    def generate(self) -> None:
         """
         Generates the maze using Kruskal's algorithm.
         
         The algorithm iterates through all walls and removes the wall if it connects two different sets,
         ensuring that all cells are connected, creating a perfect maze.
         """
-        ds = DisjointSet(self.dimension * self.dimension)  # Disjoint set to track connected components
-        walls = self._get_walls()  # Get all possible walls
+        ds: DisjointSet = DisjointSet(self.dimension * self.dimension) # Disjoint set for cell connectivity
+        walls: List[Tuple[int, int, int, int]] = self._get_walls()
         
         for y1, x1, y2, x2 in walls:
-            cell1 = y1 * self.dimension + x1
-            cell2 = y2 * self.dimension + x2
+            # Convert 2D cell coordinates to 1D index for DisjointSet
+            cell1_idx: int = y1 * self.dimension + x1
+            cell2_idx: int = y2 * self.dimension + x2
             
-            # If the cells are not connected, remove the wall
-            if ds.find(cell1) != ds.find(cell2):
-                wall_y = y1 + y2 + 1
-                wall_x = x1 + x2 + 1
+            # If the cells are not already connected, remove the wall between them
+            if ds.find(cell1_idx) != ds.find(cell2_idx):
+                # Calculate grid coordinates of the wall itself
+                wall_y: int = y1 + y2 + 1 
+                wall_x: int = x1 + x2 + 1
                 self.grid[wall_y, wall_x] = 0  # Remove wall (set to passage)
-                ds.union(cell1, cell2)  # Unite the sets containing the two cells
+                ds.union(cell1_idx, cell2_idx) # Unite the sets of the two cells
     
-    def to_list(self):
+    def to_list(self) -> List[List[int]]:
         """
-        Converts the maze grid to a list of lists for easier representation.
+        Converts the maze grid (numpy array) to a list of lists for easier representation or API response.
         
         Returns:
-            list: The maze represented as a list of lists of integers (0 for passages, 1 for walls).
+            List[List[int]]: The maze represented as a list of lists of integers (0 for passages, 1 for walls).
         """
         return self.grid.tolist()
