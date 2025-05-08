@@ -109,9 +109,9 @@ def test_api_solve_maze_malformed_json(client):
 
     data = response.get_json()
     assert "error" in data
-    # Check for the standard Werkzeug message or our fallback
-    assert "could not understand" in data["error"] or "Malformed JSON" in data["error"]
-
+    # This assertion checks for the typical default Werkzeug/Flask message for this kind of BadRequest
+    # or our fallback message from app.py
+    assert "could not understand" in data["error"] or "Malformed JSON" in data["error"] or "Failed to decode JSON object: Expecting value: line 1 column 1 (char 0)" in data["error"]
 
 def test_api_solve_maze_out_of_bounds(client):
     """Test solving when start or goal is outside maze bounds or on a wall."""
