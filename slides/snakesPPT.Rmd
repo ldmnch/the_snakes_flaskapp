@@ -56,21 +56,20 @@ class: inverse, center, middle
 ### Core Structure: Disjoint Set Union (DSU)
 .center[**(Our "Connectivity Manager")**]
 
-**What it is:** A data structure that tracks non-overlapping (disjoint) sets.
+**What it is:** A data structure that tracks non-overlapping (disjoint) sets of elements (our maze cells).
 
 **Essential Operations for Us:**
 1.  `find(item)`: Determines which set an `item` (cell) belongs to.
-- Answers: "Are these two cells already connected?"
+- Answers: "Are these two cells already connected in the maze?"
 2.  `union(item1, item2)`: Merges the sets containing `item1` and `item2`.
-- Action: "These two cells (and their groups) are now connected."
+- Action: "These two cells (and their groups) are now connected by a passage."
 
 **Key Optimizations (for speed):**
 - **Path Compression:** Flattens the structure during `find` operations.
 - **Union by Rank/Size:** Keeps the set "trees" balanced during `union`.
-- Result: Makes `find` and `union` almost constant time on average: `O(α(N))` (α is extremely slow-growing).
+- Result: Makes `find` and `union` almost constant time on average: `O(α(V_cells))` where `V_cells = D²` (number of cells), and α is the very slow-growing inverse Ackermann function.
 
-**Why DSU?** Kruskal's algorithm efficiently checks for/prevents redundancy.
-
+**Why DSU?** Enables Kruskal's to efficiently determine if removing a wall (connecting two cells) would form a cycle.
 ---
 class: footer-icon
 
@@ -81,18 +80,18 @@ class: footer-icon
 Technically: Constructing a random spanning tree on a grid of cells.
 
 **How it Works (with DSU):**
-1.  Start: Each cell is its own separate region (DSU initialized).
-2.  List all interior walls; shuffle this list randomly.
+1.  Start: Each cell is its own separate region (DSU initialized with `D²` sets).
+2.  List all interior walls (potential edges); **randomly shuffle** this list (crucial for generating diverse mazes).
 3.  Process walls one by one:
-- If a wall separates cells from *different* regions (checked via DSU `find`):
+- If a wall separates cells from *different* regions (DSU `find`):
 	- Remove the wall (create a passage).
-	- Merge the two regions (using DSU `union`).
+	- Merge the two regions (DSU `union`).
 - If cells are already in the *same* region: Do nothing (this prevents loops).
 
 **Why Kruskal's for Our Maze?**
 - Produces well-structured, perfect mazes.
 - Random shuffling offers high variety in maze layouts.
-- DSU makes it very efficient.
+- Highly efficient due to nearly constant-time DSU operations for cycle detection.
 
 ---
 class: footer-icon
@@ -100,36 +99,47 @@ class: footer-icon
 ### 2 Maze Solving: Breadth-First Search 
 .center[*(Finding the Quickest Way Out)*]
 
-**The Goal:** Find the *shortest* path from the player's start to the maze's exit.
+**The Goal:** Find the *shortest* path (in terms of number of steps) from the player's start to the maze's exit.
 
 **How it Works:**
-1.  Think of the maze as a map (graph: cells are locations, passages are roads).
-2.  Start at the player's location.
+1.  View the maze as a graph: passage cells are **nodes**, direct paths between adjacent passages are **edges**.
+2.  Start at the player's location (node).
 3.  Explore outwards in layers using a **queue** (FIFO - First-In, First-Out):
-	- Check all immediate neighbors (1 step away).
-	- Then, all *new* neighbors from those (2 steps away), and so on.
-4.  Keep track of `visited` cells to avoid going in circles or re-checking.
-5.  The first time BFS reaches the exit, that path is guaranteed to be the shortest.
+	- Check all immediate neighbors (1 step/edge away).
+	- Then, all *new* neighbors from those (2 steps/edges away), and so on.
+4.  Keep track of `visited` cells (nodes) to avoid cycles or redundant checks.
+5.  The first time BFS reaches the exit node, that path is guaranteed to be the shortest (by number of edges).
 
 **Why BFS for Our Solver?**
 - Guarantees the shortest path (in terms of number of steps).
 - Always finds a path if one exists.
-- Efficient and relatively simple for grid-based paths.
+- Efficient and relatively simple for grid-based pathfinding.
 
 ---
 ### Complexity Insights
-**Algorithm 1 (for `D x D` cells):** Let `V = D²` (number of cells).
 
-**Time:** `O(V * α(V))` or `O(D² * α(D²))`.
-- Very fast. Nearly linear in the number of cells, scales well for big mazes.
+**Algorithm 1: Maze Generation (Kruskal's with DSU)**
+Let `V_cells = D²` (number of cells/nodes in the maze).
+Let `E_walls ≈ 2D²` (number of potential interior walls/edges).
 
-**Space:** `O(V)` or `O(D²)`.
-- Needs memory proportional to the number of cells for the grid and DSU.
+**Time:** `O(E_walls log E_walls + E_walls * α(V_cells))`
+  - Simplified: `O(D² log D + D² * α(D²))`
+  - Involves sorting/processing walls and many DSU operations.
+  - `α(V_cells)` is nearly constant, making it very fast; scales well.
 
-**Algorithm 2 (grid with `N` cells):** Let `N` be total cells in grid -> `(2D+1)²`.
+**Space:** `O(V_cells + E_walls)`
+  - Simplified: `O(D²)`
+  - For grid, DSU arrays (`parent`, `rank`), and wall list.
 
-**Time:** `O(N)`.
-- Fast. Visits each cell and passage at most once.
+---
+**Algorithm 2: Maze Solving (BFS)**
+Operates on the graph of `V_cells = D²` passage cells.
+(The underlying array representation of the maze is `(2D+1)x(2D+1)`).
 
-**Space:** `O(N)`.
-- Needs memory for queue & visited set, potentially up to the maze size.
+**Time:** `O(V_cells + E_passages)` where `E_passages` are connections between passage cells.
+  - Simplified: `O(D²)`
+  - Visits each passage cell and connection at most once.
+
+**Space:** `O(V_cells)`
+  - Simplified: `O(D²)`
+  - For the queue & `visited` set, proportional to the number of passage cells.
