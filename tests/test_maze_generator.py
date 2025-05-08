@@ -1,72 +1,101 @@
-# test_maze_generator.py
-# s21 tests in total
-
 import pytest
+
+# Assuming src/maze_generator.py is discoverable relative to tests/ or project root
 from src.maze_generator import DisjointSet, Maze
 
-# --- DisjointSet Tests ---
+
+# ==============================================================================
+# DisjointSet Unit Tests
+# ==============================================================================
+
 
 def test_disjoint_set_union_and_find():
-    """Unit testing of the initialization, union and merge, 1 test total"""
-    ds = DisjointSet(3 * 3) #Medium Size test, 3x3 grid
+    """Verify DisjointSet find and union operations, including preventing redundant merges."""
+    ds = DisjointSet(9)  # Test with a 3x3 cell grid equivalent (9 elements)
 
-    #Check for the root
-    assert ds.find(0) == 0 
+    # Initial state: element 0 is its own root
+    assert ds.find(0) == 0
 
-    #Merges the disjoint set if true
-    assert ds.union(0, 1) is True 
+    # First union should succeed
+    assert ds.union(0, 1) is True
 
-    #Confirms that the numbers belong to the set
-    assert ds.find(0) == ds.find(1) 
+    # After union, 0 and 1 should have the same root
+    assert ds.find(0) == ds.find(1)
 
-    #Confirms that the numbers belong to the set, prevents redundancy
-    assert ds.union(0, 1) is False 
+    # Second union of the same elements should fail (already connected)
+    assert ds.union(0, 1) is False
 
-#Defines the dimension 
-@pytest.mark.parametrize("dimension", [5, 7, 10, 15, 20, 100])
+
+# ==============================================================================
+# Maze Class Tests
+# ==============================================================================
+
+
+@pytest.mark.parametrize("dimension", [3, 5, 7, 10, 15, 20, 100])
 def test_maze_generation_properties(dimension):
-    """Grid size coverage test for other dimensions, 6 tests total."""
+    """Check grid size and passage count for generated mazes of various dimensions."""
     maze = Maze(dimension)
     maze.generate()
     grid = maze.to_list()
+    grid_size = 2 * dimension + 1
 
-    #Check if grid dimensions are correct
-    assert len(grid) == 2 * dimension + 1
-    assert all(len(row) == 2 * dimension + 1 for row in grid)
+    # Verify overall grid dimensions
+    assert len(grid) == grid_size
+    assert all(len(row) == grid_size for row in grid)
 
-    # Count passages (0s); should be more than cells (d*d)
-    flat = [cell for row in grid for cell in row]
-    assert flat.count(0) > dimension * dimension  # All cells + some walls removed
+    # Verify passage count: A perfect maze removes exactly (dimension*dimension - 1) walls.
+    # Total cells = dimension * dimension
+    # Total possible grid points = grid_size * grid_size
+    # Total walls initially = grid_size*grid_size - num_cells
+    # Passages = num_cells + num_removed_walls = num_cells + (num_cells - 1) = 2*num_cells - 1
+    # However, counting 0s includes the cell passages AND removed wall passages.
+    # A simpler check: There should be more passages (0s) than initial cell centers (dimension*dimension).
+    flat_grid = [cell for row in grid for cell in row]
+    passage_count = flat_grid.count(0)
+    assert passage_count > dimension * dimension
 
-# --- Maze Tests ---
 
-#Defines the dimension and the passage to be tested for in each grid
-@pytest.mark.parametrize("passages, y, x", [
-    (3, 1, 1),
-    (5, 3, 3),
-    (7, 5, 5),
-    (10, 7, 7),
-    (15, 9, 9),
-    (20, 15, 15),
-    (100, 99, 99)
-])            
-def test_initialize_grid(passages, y, x):
-    """Test to verify if the passage initialization works correctly, 7 tests total."""
-    maze = Maze(passages)
-    assert maze.grid[y, x] == 0
+# Parametrized test cases: (maze_dimension, grid_y_coord, grid_x_coord) for cell center
+# Cell (r, c) where 0 <= r,c < dimension corresponds to grid coords (2r+1, 2c+1)
+@pytest.mark.parametrize(
+    "dimension, grid_y, grid_x",
+    [
+        (3, 1, 1),  # Cell (0,0) center
+        (5, 3, 3),  # Cell (1,1) center
+        (7, 5, 5),  # Cell (2,2) center
+        (10, 7, 7), # Cell (3,3) center
+        (15, 9, 9), # Cell (4,4) center
+        (20, 15, 15), # Cell (7,7) center
+        (100, 99, 99), # Cell (49,49) center
+    ],
+)
+def test_initialize_passages(dimension, grid_y, grid_x):
+    """Verify that cell centers are correctly initialized as passages (0)."""
+    maze = Maze(dimension)
+    # Check the state *after* initialization but *before* generation
+    assert maze.grid[grid_y, grid_x] == 0
 
-#Defines the dimension of the walls to be tested for each grid
-@pytest.mark.parametrize("walls", [3, 5, 7, 10, 15, 20, 100])
-def test_get_walls_count(walls):
-    """Test that all wall positions are initialized as 1, 7 tests total."""
-    
-    maze = Maze(walls)
-    
-    for y in range(maze.grid_size): #for each loop in row y
-        for x in range(maze.grid_size): #if y in 2, means row is even
-            if y % 2 == 0 or x % 2 == 0: #if x in 2 means column is even
-                assert maze.grid[y, x] == 1  #tests the assertion when value is 1, confirming it is a wall
 
-# --- Helper to run tests if script is executed directly ---
+@pytest.mark.parametrize("dimension", [3, 5, 7, 10, 15, 20, 100])
+def test_initial_walls(dimension):
+    """Verify that all grid locations *not* corresponding to cell passages are initially walls (1)."""
+    maze = Maze(dimension)
+    # Check the state *after* initialization but *before* generation
+
+    for y in range(maze.grid_size):
+        for x in range(maze.grid_size):
+            # A point is a wall if EITHER coordinate is even (boundary or between-cell wall)
+            # OR if it's an odd/odd coordinate that wasn't initialized as a passage (shouldn't happen with current init)
+            is_cell_passage = (y % 2 != 0) and (x % 2 != 0)
+            if not is_cell_passage:
+                assert maze.grid[y, x] == 1, f"Expected wall at ({y},{x}), got {maze.grid[y, x]}"
+            else:
+                # This checks that our _initialize_passages worked as expected
+                 assert maze.grid[y, x] == 0, f"Expected passage at ({y},{x}), got {maze.grid[y, x]}"
+
+
+# --- Test Runner Helper ---
+# This block is typically not needed when using the `pytest` command runner,
+# but doesn't hurt if you sometimes run scripts directly with `python tests/test_...`.
 if __name__ == "__main__":
-     pytest.main() # Runs all tests in this file
+    pytest.main()

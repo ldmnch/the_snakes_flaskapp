@@ -1,85 +1,138 @@
-# archive_leaderboard.py
 import json
+import logging
 import os
 import shutil
+import sys
 from datetime import datetime, timedelta
+from typing import NoReturn
 
-# --- Configuration ---
-# Adjust these paths based on your project structure and where leaderboard.json lives.
-# Assumes this script is run from the project root or paths are absolute.
+
+# ==============================================================================
+# Configuration
+# ==============================================================================
+
+# Determine project root based on this script's location
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-LEADERBOARD_FILENAME = 'leaderboard.json'
 
-# Option 1: Leaderboard in a 'data' subdirectory (RECOMMENDED)
-DATA_DIR = os.path.join(PROJECT_ROOT, 'data')
+# --- Path Configuration ---
+# Modify these paths if your structure differs or you need absolute paths elsewhere.
+
+# Assumes leaderboard.json is in a 'data' subdirectory within the project root.
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+LEADERBOARD_FILENAME = "leaderboard.json"
 CURRENT_LEADERBOARD_PATH = os.path.join(DATA_DIR, LEADERBOARD_FILENAME)
 
-# Option 2: Leaderboard at project root (matches your current app.config if not changed)
-# CURRENT_LEADERBOARD_PATH = os.path.join(PROJECT_ROOT, LEADERBOARD_FILENAME)
+# Directory where daily archives will be stored.
+ARCHIVE_DIR = os.path.join(PROJECT_ROOT, "leaderboard_archives")
 
-ARCHIVE_DIR = os.path.join(PROJECT_ROOT, 'leaderboard_archives')
+# Set to True to clear the current leaderboard after successful archival.
+RESET_LEADERBOARD_AFTER_ARCHIVE = False
 
-# --- Helper Functions ---
+# --- Logging Configuration ---
+# Basic logging to stdout, similar to app.py for consistency if run manually.
+# Cron jobs should redirect stdout/stderr to capture this output.
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)-8s [ArchiveScript]: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
+
+
+# ==============================================================================
+# Helper Functions
+# ==============================================================================
+
+
 def get_yesterdays_date_str() -> str:
-    """Returns yesterday's date as YYYY-MM-DD."""
+    """Returns yesterday's date formatted as YYYY-MM-DD."""
     yesterday = datetime.now() - timedelta(days=1)
-    return yesterday.strftime('%Y-%m-%d')
+    return yesterday.strftime("%Y-%m-%d")
 
-def ensure_dir_exists(directory_path: str):
-    """Creates a directory if it doesn't exist."""
-    if not os.path.exists(directory_path):
-        try:
-            os.makedirs(directory_path)
-            print(f"Created directory: {directory_path}")
-        except OSError as e:
-            print(f"Error creating directory {directory_path}: {e}")
-            raise # Re-raise if directory creation is critical
+
+def ensure_dir_exists(directory_path: str) -> bool:
+    """
+    Creates a directory if it doesn't exist. Returns True if exists or created, False on error.
+    """
+    if os.path.exists(directory_path):
+        return True
+    try:
+        os.makedirs(directory_path)
+        logger.info(f"Created directory: {directory_path}")
+        return True
+    except OSError as e:
+        logger.error(f"Error creating directory {directory_path}: {e}")
+        return False
+
+
+def exit_script(message: str, level: int = logging.INFO) -> NoReturn:
+    """Logs a final message and exits the script."""
+    logger.log(level, message)
+    logger.info(f"--- Leaderboard Archival Script Finished: {datetime.now()} ---")
+    sys.exit(1 if level >= logging.ERROR else 0)
+
+
+# ==============================================================================
+# Main Archival Logic
+# ==============================================================================
+
 
 def main():
-    print(f"--- Leaderboard Archival Script Started: {datetime.now()} ---")
+    logger.info(f"--- Leaderboard Archival Script Started: {datetime.now()} ---")
 
-    ensure_dir_exists(ARCHIVE_DIR)
-    # If using a 'data' directory, ensure it exists (though app should handle it)
-    # ensure_dir_exists(DATA_DIR) # Less critical if app creates/uses it
+    # Ensure archive directory exists, exit on failure
+    if not ensure_dir_exists(ARCHIVE_DIR):
+        exit_script(f"Failed to create or access archive directory: {ARCHIVE_DIR}", logging.ERROR)
 
+    # Check if the current leaderboard file exists
     if not os.path.exists(CURRENT_LEADERBOARD_PATH):
-        print(f"Current leaderboard file not found at {CURRENT_LEADERBOARD_PATH}. Nothing to archive.")
-        return
+        exit_script(
+            f"Current leaderboard not found at {CURRENT_LEADERBOARD_PATH}. Nothing to archive."
+        )
 
-    # 1. Determine archive filename
+    # --- Prepare Archive File Path ---
     yesterday_str = get_yesterdays_date_str()
     archive_filename = f"leaderboard_{yesterday_str}.json"
     archive_filepath = os.path.join(ARCHIVE_DIR, archive_filename)
 
+    # Check if archive for yesterday already exists
     if os.path.exists(archive_filepath):
-        print(f"Archive for {yesterday_str} already exists at {archive_filepath}. Skipping.")
-        # Optionally, overwrite or append a timestamp if multiple runs per day are possible
-        # For a daily cron, this check is usually sufficient.
-        return
+        exit_script(
+            f"Archive for {yesterday_str} already exists at {archive_filepath}. Skipping."
+        )
 
-    # 2. Copy current leaderboard to archive
+    # --- Perform Archival (Copy) ---
     try:
-        shutil.copy2(CURRENT_LEADERBOARD_PATH, archive_filepath) # copy2 preserves metadata
-        print(f"Successfully archived leaderboard to: {archive_filepath}")
-    except IOError as e:
-        print(f"Error copying leaderboard to archive: {e}")
-        return
-    except Exception as e:
-        print(f"An unexpected error occurred during archival: {e}")
-        return
+        # copy2 preserves metadata like modification time
+        shutil.copy2(CURRENT_LEADERBOARD_PATH, archive_filepath)
+        logger.info(f"Successfully archived leaderboard to: {archive_filepath}")
+    except (OSError, shutil.Error) as e:
+        exit_script(f"Error copying leaderboard to archive: {e}", logging.ERROR)
+    except Exception as e: # Catch any other unexpected error during copy
+         exit_script(f"An unexpected error occurred during copy: {e}", logging.ERROR)
 
-    # 3. OPTIONAL: Reset current leaderboard
-    # If you want to clear the main leaderboard daily after archiving:
-    # try:
-    #     with open(CURRENT_LEADERBOARD_PATH, 'w') as f:
-    #         json.dump([], f, indent=4)
-    #     print(f"Successfully reset current leaderboard: {CURRENT_LEADERBOARD_PATH}")
-    # except IOError as e:
-    #     print(f"Error resetting current leaderboard: {e}")
-    # except Exception as e:
-    #     print(f"An unexpected error occurred while resetting leaderboard: {e}")
 
-    print(f"--- Leaderboard Archival Script Finished: {datetime.now()} ---")
+    # --- Optional: Reset Current Leaderboard ---
+    if RESET_LEADERBOARD_AFTER_ARCHIVE:
+        logger.info(f"Resetting current leaderboard file: {CURRENT_LEADERBOARD_PATH}")
+        try:
+            # Overwrite the current file with an empty JSON list
+            with open(CURRENT_LEADERBOARD_PATH, "w") as f:
+                json.dump([], f, indent=4)
+            logger.info(f"Successfully reset current leaderboard.")
+        except OSError as e:
+            # Log error but don't necessarily exit with error status, as archive succeeded
+            logger.error(f"Error resetting current leaderboard: {e}")
+        except Exception as e:
+            logger.error(f"An unexpected error occurred while resetting leaderboard: {e}")
+
+    exit_script("Archival process completed successfully.")
+
+
+# ==============================================================================
+# Script Execution
+# ==============================================================================
 
 if __name__ == "__main__":
     main()
