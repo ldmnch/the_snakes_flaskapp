@@ -4,8 +4,7 @@ from app import app # Assuming app.py is in the project root or discoverable by 
 
 @pytest.fixture
 def client():
-    # app.config['TESTING'] = True # Good practice for Flask testing
-    # app.config['DEBUG'] = False # Ensure debug is off during tests
+    # app.config['TESTING'] = True # Good practice, but not strictly "necessary" for existing tests to run
     with app.test_client() as client:
         yield client
 
@@ -16,7 +15,8 @@ def test_api_generate_maze_valid(client):
     assert response.status_code == 200
     maze = response.get_json()
     assert isinstance(maze, list)
-    expected_size = 2 * 5 + 1 
+    # For a 5x5 dimension, grid_size = 2 * 5 + 1 = 11
+    expected_size = 11
     assert len(maze) == expected_size
     assert all(len(row) == expected_size for row in maze)
 
@@ -66,22 +66,16 @@ def test_api_solve_maze_missing_fields(client):
     assert response.status_code == 400
     data = response.get_json()
     assert "error" in data
-    assert "Missing maze, start, or goal data" in data["error"]
+    # CORRECTED ASSERTION: Match the actual error message from app.py
+    assert "Missing one or more required keys: maze, start, goal" in data["error"]
 
 def test_api_solve_maze_malformed_json(client):
     response = client.post('/api/solve_maze', data="not-a-json-string {malformed", content_type='application/json')
     assert response.status_code == 400
     data = response.get_json()
     assert "error" in data
-    # Update the assertion to match the typical default Werkzeug/Flask message for this kind of BadRequest
-    # This message can vary slightly based on Flask/Werkzeug versions, but "could not understand" is common.
-    # Alternatively, check for a more generic part of the message or if the custom message from `getattr` is used.
-    # For the `getattr(e, 'description', "Malformed JSON or bad request")` in app.py,
-    # if `e.description` is Flask's generic one, it will be used.
-    # Let's check for the fallback we provided in `getattr` if `e.description` was None (less likely for this error),
-    # OR Flask's more generic message.
-    # A more robust check might be to see if the error message indicates a parsing failure.
-    # Given the error message you saw: "The browser (or proxy) sent a request that this server could not understand."
+    # This assertion checks for the typical default Werkzeug/Flask message for this kind of BadRequest
+    # or our fallback message from app.py
     assert "could not understand" in data["error"] or "Malformed JSON" in data["error"]
 
 def test_api_solve_maze_out_of_bounds(client):
