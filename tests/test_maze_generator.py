@@ -90,12 +90,5 @@ def test_initial_walls(dimension):
             if not is_cell_passage:
                 assert maze.grid[y, x] == 1, f"Expected wall at ({y},{x}), got {maze.grid[y, x]}"
             else:
-                # This checks that our _initialize_passages worked as expected
+                # This checks that _initialize_passages worked as expected
                  assert maze.grid[y, x] == 0, f"Expected passage at ({y},{x}), got {maze.grid[y, x]}"
-
-
-# --- Test Runner Helper ---
-# This block is typically not needed when using the `pytest` command runner,
-# but doesn't hurt if you sometimes run scripts directly with `python tests/test_...`.
-if __name__ == "__main__":
-    pytest.main()

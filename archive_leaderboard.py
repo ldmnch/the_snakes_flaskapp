@@ -1,3 +1,5 @@
+# archive_leaderboard.py
+
 import json
 import logging
 import os
@@ -15,9 +17,7 @@ from typing import NoReturn
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 # --- Path Configuration ---
-# Modify these paths if your structure differs or you need absolute paths elsewhere.
 
-# Assumes leaderboard.json is in a 'data' subdirectory within the project root.
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 LEADERBOARD_FILENAME = "leaderboard.json"
 CURRENT_LEADERBOARD_PATH = os.path.join(DATA_DIR, LEADERBOARD_FILENAME)
@@ -29,7 +29,6 @@ ARCHIVE_DIR = os.path.join(PROJECT_ROOT, "leaderboard_archives")
 RESET_LEADERBOARD_AFTER_ARCHIVE = False
 
 # --- Logging Configuration ---
-# Basic logging to stdout, similar to app.py for consistency if run manually.
 # Cron jobs should redirect stdout/stderr to capture this output.
 logging.basicConfig(
     stream=sys.stdout,

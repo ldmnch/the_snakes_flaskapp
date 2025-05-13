@@ -1,4 +1,4 @@
-#tests/test_maze_solver.py 
+# tests/test_maze_solver.py 
 
 import pytest
 
@@ -174,8 +174,3 @@ def test_large_maze_path():
         )
         visited_in_path.add(step)
         last_pos = step
-
-
-# --- Test Runner Helper ---
-if __name__ == "__main__":
-    pytest.main()

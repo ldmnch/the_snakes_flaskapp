@@ -10,7 +10,7 @@ from app import app
 @pytest.fixture
 def client():
     """Provides a test client for the Flask application."""
-    # app.config['TESTING'] = True # Good practice, ensures exceptions are propagated
+    # app.config['TESTING'] = True
     # app.config['DEBUG'] = False  # Ensure debug is off during tests
     with app.test_client() as client:
         yield client
@@ -110,7 +110,7 @@ def test_api_solve_maze_malformed_json(client):
     data = response.get_json()
     assert "error" in data
     # This assertion checks for the typical default Werkzeug/Flask message for this kind of BadRequest
-    # or our fallback message from app.py
+    # or the fallback message from app.py
     assert "could not understand" in data["error"] or "Malformed JSON" in data["error"] or "Failed to decode JSON object: Expecting value: line 1 column 1 (char 0)" in data["error"]
 
 def test_api_solve_maze_out_of_bounds(client):
