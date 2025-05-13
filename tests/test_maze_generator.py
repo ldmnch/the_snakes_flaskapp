@@ -1,6 +1,6 @@
+# tests/test_maze_generator.py
 import pytest
 
-# Assuming src/maze_generator.py is discoverable relative to tests/ or project root
 from src.maze_generator import DisjointSet, Maze
 
 
