@@ -28,7 +28,14 @@ class: footer-icon
 
 ## Demonstration of the Project
 
-Now, Ashley will show you a demo of the Snake Maze app :)
+Now, Ashley will show you a demo of the Snake Maze app!
+
+You can also try it out yourself here:
+[thesnakegame.pythonanywhere.com](https://thesnakegame.pythonanywhere.com/)
+
+.center[
+<img src="images/demo-screenshot.png" alt="Screenshot of the Snake Maze App" style="width: 70%; border: 2px solid #555;"/>
+]
 
 ---
 
